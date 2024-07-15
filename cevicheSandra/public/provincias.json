@@ -1,0 +1,15 @@
+[
+    {
+        "name": "Panamá",
+        "districts": [
+            {
+                "name": "Panamá",
+                "corregimientos": [
+                    "Caimitillo",
+                    "Alcalde Díaz",
+                    "Las Cumbres"
+                ]
+            }
+        ]
+    }
+]
