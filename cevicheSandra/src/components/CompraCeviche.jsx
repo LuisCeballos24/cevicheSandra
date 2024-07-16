@@ -1,29 +1,38 @@
 import React, { useState, useEffect } from 'react';
-import { GoogleMap, LoadScript, Marker } from '@react-google-maps/api';
 import axios from 'axios';
+import { GoogleMap, LoadScript, Marker } from '@react-google-maps/api';
+import jsPDF from 'jspdf';
+import emailjs from 'emailjs-com';
+import { initializeApp } from 'firebase/app';
+import { getAuth, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+
+// Configuración de Firebase
+const firebaseConfig = {
+    apiKey: "AIzaSyBEdwCANDcQofNB7lOSjlQcpL-I8-uORCI",
+    authDomain: "propios-ba684.firebaseapp.com",
+    projectId: "propios-ba684",
+    storageBucket: "propios-ba684.appspot.com",
+    messagingSenderId: "451125740462",
+    appId: "1:451125740462:web:9c62b5729e0d4d862fbe3f",
+    measurementId: "G-GKG5B7DLF9"
+};
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
 
 const CompraCeviche = () => {
-    const [cevichesData, setCevichesData] = useState([]);
-    const [provinciasData, setProvinciasData] = useState([]);
-    const [order, setOrder] = useState([]);
-    const [total, setTotal] = useState(0);
     const [name, setName] = useState('');
     const [phone, setPhone] = useState('');
     const [email, setEmail] = useState('');
     const [province, setProvince] = useState('');
     const [district, setDistrict] = useState('');
     const [corregimiento, setCorregimiento] = useState('');
-    const [selectedLocation, setSelectedLocation] = useState(null);
-    const [selectedLocationInfo, setSelectedLocationInfo] = useState('');
     const [requireDelivery, setRequireDelivery] = useState(false);
-    const [errors, setErrors] = useState({
-        name: false,
-        phone: false,
-        email: false,
-        province: false,
-        district: false,
-        corregimiento: false
-    });
+    const [selectedLocation, setSelectedLocation] = useState(null);
+    const [errors, setErrors] = useState({});
+    const [cevichesData, setCevichesData] = useState([]);
+    const [provinciasData, setProvinciasData] = useState([]);
+    const [order, setOrder] = useState([]);
+    const [loggedIn, setLoggedIn] = useState(false);
 
     useEffect(() => {
         const fetchCevichesData = async () => {
@@ -54,307 +63,178 @@ const CompraCeviche = () => {
         fetchProvinciasData();
     }, []);
 
-    const handleSizeChange = (id, size) => {
-        const updatedOrder = order.map((item) =>
-            item.id === id ? { ...item, size } : item
-        );
-        setOrder(updatedOrder);
-        updateTotal(updatedOrder);
-    };
-
-    const handleQuantityChange = (id, quantity) => {
-        const updatedOrder = order.map((item) =>
-            item.id === id ? { ...item, quantity } : item
-        );
-        setOrder(updatedOrder);
-        updateTotal(updatedOrder);
-    };
-
-    const updateTotal = (order) => {
-        const newTotal = order.reduce((acc, item) => {
-            const ceviche = cevichesData.find((ceviche) => ceviche.id === item.id);
-            const price = ceviche.prices[item.size];
-            return acc + price * item.quantity;
-        }, 0);
-        setTotal(newTotal);
-    };
-
-    const handleProvinceChange = (value) => {
-        const selectedProvince = provinciasData.find((provincia) => provincia.name === value);
-        setProvince(value);
-        if (selectedProvince) {
-            setDistrict('');
-            setCorregimiento('');
+    const handleAddToOrder = (product, size) => {
+        const existingOrder = order.find(item => item.id === product.id && item.size === size);
+        if (existingOrder) {
+            setOrder(order.map(item => item.id === product.id && item.size === size ? { ...item, quantity: item.quantity + 1 } : item));
+        } else {
+            setOrder([...order, { id: product.id, name: product.name, size, quantity: 1 }]);
         }
     };
 
-    const handleDistrictChange = (value) => {
-        setDistrict(value);
-        setCorregimiento('');
-    };
-
-    const handleCorregimientoChange = (value) => {
-        setCorregimiento(value);
-        const corregimientoData = provinciasData
-            .find((provincia) => provincia.name === province)
-            ?.districts.find((distrito) => distrito.name === district)
-            ?.corregimientos.find((corr) => corr === value);
-        if (corregimientoData && corregimientoData.location) {
-            setSelectedLocation(corregimientoData.location);
-            setSelectedLocationInfo(corregimientoData.name);
-        }
+    const handleRemoveFromOrder = (product, size) => {
+        setOrder(order.map(item => item.id === product.id && item.size === size ? { ...item, quantity: item.quantity - 1 } : item).filter(item => item.quantity > 0));
     };
 
     const handleUseCurrentLocation = () => {
         if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(
-                (position) => {
-                    setSelectedLocation({
-                        lat: position.coords.latitude,
-                        lng: position.coords.longitude
-                    });
-                    setSelectedLocationInfo('Mi Ubicación Actual');
-                },
-                (error) => {
-                    console.error('Error getting current location:', error);
-                    alert('No se pudo obtener la ubicación actual.');
-                }
-            );
-        } else {
-            console.error('Geolocation is not supported by this browser.');
-            alert('Geolocalización no es compatible con este navegador.');
-        }
-    };
-
-    const validatePhone = (phone) => {
-        // Expresión regular para validar un número de teléfono en formato panameño
-        const phoneRegex = /^[6789]\d{7}$/;
-        return phoneRegex.test(phone);
-    };
-
-    const validateEmail = (email) => {
-        // Expresión regular para validar un correo electrónico
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        return emailRegex.test(email);
-    };
-
-    const handlePhoneChange = (value) => {
-        setPhone(value);
-        setErrors((prevErrors) => ({
-            ...prevErrors,
-            phone: !validatePhone(value)
-        }));
-    };
-
-    const handleEmailChange = (value) => {
-        setEmail(value);
-        setErrors((prevErrors) => ({
-            ...prevErrors,
-            email: !validateEmail(value)
-        }));
-    };
-
-    const handleSubmit = () => {
-        let formValid = true;
-        const newErrors = {
-            name: !name,
-            phone: !validatePhone(phone),
-            email: !validateEmail(email),
-            province: requireDelivery && !province,
-            district: requireDelivery && !district,
-            corregimiento: requireDelivery && !corregimiento
-        };
-
-        Object.values(newErrors).forEach((error) => {
-            if (error) {
-                formValid = false;
-            }
-        });
-
-        if (formValid) {
-            setErrors({
-                name: false,
-                phone: false,
-                email: false,
-                province: false,
-                district: false,
-                corregimiento: false
+            navigator.geolocation.getCurrentPosition(position => {
+                setSelectedLocation({
+                    lat: position.coords.latitude,
+                    lng: position.coords.longitude
+                });
             });
-            console.log('Orden enviada:', { order, name, phone, email, province, district, corregimiento, selectedLocation, selectedLocationInfo });
-            // Aquí puedes añadir la lógica para enviar la orden con todos los datos recopilados.
-        } else {
-            setErrors(newErrors);
         }
     };
 
     const handleMapClick = (event) => {
-        setSelectedLocation(event.latLng.toJSON());
-        fetchLocationInfo(event.latLng);
+        setSelectedLocation({
+            lat: event.latLng.lat(),
+            lng: event.latLng.lng()
+        });
     };
 
-    const fetchLocationInfo = async (latLng) => {
+    const handleLogin = async () => {
+        const provider = new GoogleAuthProvider();
         try {
-            const response = await axios.get(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${latLng.lat},${latLng.lng}&key=AIzaSyCEowo0H2S9ve_rpnPTeUr0_AqKtM26uAo`);
-            if (response.data.results && response.data.results.length > 0) {
-                const address = response.data.results[0].formatted_address;
-                setSelectedLocationInfo(address);
-            }
+            await signInWithPopup(auth, provider);
+            setLoggedIn(true);
         } catch (error) {
-            console.error('Error fetching location info:', error);
+            console.error("Error al iniciar sesión con Google:", error);
         }
     };
 
-    return (
-        <div className="container mx-auto p-6 bg-gray-100">
-            <div className="flex items-center mb-4">
-                <i className="fas fa-arrow-left text-lg"></i>
-                <span className="ml-2 text-lg font-semibold">¡Compra Ceviche!</span>
-            </div>
-            <hr className="mb-4" />
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                    <h2 className="text-xl font-semibold mb-2">Elige tu Ceviche</h2>
-                    <p className="text-gray-500 mb-4">Selecciona uno de nuestros deliciosos ceviches:</p>
-                    {cevichesData.map((ceviche) => (
-                        <div key={ceviche.id} className="flex items-center p-4 bg-white rounded-lg shadow">
-                            <div className="w-16 h-16 rounded-full bg-gray-200 flex-shrink-0"></div>
-                            <div className="ml-4 flex-1">
-                                <h3 className="text-lg font-semibold">{ceviche.name}</h3>
-                                <div className="flex items-center mt-2">
-                                    <select
-                                        className="border border-gray-300 rounded px-2 py-1 mr-2"
-                                        value={order.find((item) => item.id === ceviche.id)?.size || '7oz'}
-                                        onChange={(e) => handleSizeChange(ceviche.id, e.target.value)}
-                                    >
-                                        <option value="7oz">7oz</option>
-                                        <option value="14oz">14oz</option>
-                                    </select>
-                                    <input
-                                        type="number"
-                                        min="0"
-                                        className="border border-gray-300 rounded px-2 py-1 w-20"
-                                        value={order.find((item) => item.id === ceviche.id)?.quantity || 0}
-                                        onChange={(e) => handleQuantityChange(ceviche.id, parseInt(e.target.value))}
-                                    />
-                                </div>
-                            </div>
+    const handleSubmit = async () => {
+        let validationErrors = {};
+        if (!name) validationErrors.name = true;
+        if (!phone) validationErrors.phone = true;
+        if (!email) validationErrors.email = true;
+        // Agrega validaciones adicionales según sea necesario
+    
+        if (Object.keys(validationErrors).length > 0) {
+            setErrors(validationErrors);
+            return;
+        }
+    
+        // Si necesitas iniciar sesión antes de enviar el correo
+        if (!loggedIn) {
+            await handleLogin();
+        }
+    
+        // Generar PDF u otros datos necesarios
+        const doc = new jsPDF();
+        doc.text('Resumen de Pedido', 10, 10);
+        order.forEach((item, index) => {
+            doc.text(`${item.name} - ${item.size} - ${item.quantity}`, 10, 20 + (index * 10));
+        });
+        const pdfData = doc.output('datauristring');
+    
+        // Envío del correo utilizando EmailJS
+        try {
+            const result = await emailjs.send('service_g5payzo', 'template_z40xbbg', {
+                to_name: name,
+                message: 'Gracias por tu pedido. Adjunto encontrarás el resumen.',
+                to_email: email,
+                attachment: pdfData
+            }, '5mHKxB7E0vSnpXpsZ');
+            console.log(pdfData);
+            console.log('Correo enviado exitosamente:', result.text);
+            alert('Orden enviada con éxito');
+        } catch (error) {
+            console.error('Error al enviar el correo:', error);
+            alert('Error al enviar el correo. Por favor, inténtalo de nuevo más tarde.');
+        }    
+    };    return (
+        <div className="p-6 max-w-6xl mx-auto">
+            <h1 className="text-2xl mb-4">Compra de Ceviches</h1>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {cevichesData.map((product) => (
+                    <div key={product.id} className="border p-4 rounded">
+                        <img src={product.image} alt={product.name} className="w-full h-32 object-cover mb-2" />
+                        <h2 className="text-xl">{product.name}</h2>
+                        <div className="mt-2">
+                            {Object.keys(product.prices).map(size => (
+                                <button key={size} onClick={() => handleAddToOrder(product, size)} className="mr-2 mb-2 bg-blue-500 text-white px-2 py-1 rounded">{size}</button>
+                            ))}
                         </div>
-                    ))}
-                </div>
-                <div>
-                    <h2 className="text-xl font-semibold mb-2">Detalles del Pedido</h2>
-                    <p className="text-gray-500 mb-4">Completa tus datos y elige la ubicación de entrega:</p>
-                    <div className="flex flex-col gap-4">
-                        <input
-                            type="text"
-                            placeholder="Nombre"
-                            className={`border border-gray-300 rounded px-3 py-2 ${errors.name ? 'border-red-500' : ''}`}
-                            value={name}
-                            onChange={(e) => setName(e.target.value)}
-                        />
-                        {errors.name && <p className="text-red-500 text-sm">Por favor ingresa tu nombre.</p>}
-                        <input
-                            type="text"
-                            placeholder="Teléfono"
-                            className={`border border-gray-300 rounded px-3 py-2 ${errors.phone ? 'border-red-500' : ''}`}
-                            value={phone}
-                            onChange={(e) => handlePhoneChange(e.target.value)}
-                        />
-                        {errors.phone && <p className="text-red-500 text-sm">Por favor ingresa un número de teléfono válido (ej. 61234567).</p>}
-                        <input
-                            type="text"
-                            placeholder="Correo Electrónico"
-                            className={`border border-gray-300 rounded px-3 py-2 ${errors.email ? 'border-red-500' : ''}`}
-                            value={email}
-                            onChange={(e) => handleEmailChange(e.target.value)}
-                        />
-                        {errors.email && <p className="text-red-500 text-sm">Por favor ingresa un correo electrónico válido.</p>}
-                        <div className="flex items-center">
-                            <input
-                                type="checkbox"
-                                className="form-checkbox h-5 w-5 text-blue-600"
-                                checked={requireDelivery}
-                                onChange={(e) => setRequireDelivery(e.target.checked)}
-                            />
-                            <label className="ml-2">¿Requiere entrega?</label>
-                        </div>
-                        {requireDelivery && (
-                            <>
-                                <select
-                                    className={`border border-gray-300 rounded px-3 py-2 ${errors.province ? 'border-red-500' : ''}`}
-                                    value={province}
-                                    onChange={(e) => handleProvinceChange(e.target.value)}
-                                >
-                                    <option value="">Selecciona Provincia</option>
-                                    {provinciasData.map((provincia) => (
-                                        <option key={provincia.name} value={provincia.name}>{provincia.name}</option>
-                                    ))}
-                                </select>
-                                {errors.province && <p className="text-red-500 text-sm">Por favor selecciona la provincia.</p>}
-                                {province && (
-                                    <>
-                                        <select
-                                            className={`border border-gray-300 rounded px-3 py-2 ${errors.district ? 'border-red-500' : ''}`}
-                                            value={district}
-                                            onChange={(e) => handleDistrictChange(e.target.value)}
-                                        >
-                                            <option value="">Selecciona Distrito</option>
-                                            {provinciasData.find((provincia) => provincia.name === province)?.districts.map((distrito) => (
-                                                <option key={distrito.name} value={distrito.name}>{distrito.name}</option>
-                                            ))}
-                                        </select>
-                                        {errors.district && <p className="text-red-500 text-sm">Por favor selecciona el distrito.</p>}
-                                        {district && (
-                                            <select
-                                                className={`border border-gray-300 rounded px-3 py-2 ${errors.corregimiento ? 'border-red-500' : ''}`}
-                                                value={corregimiento}
-                                                onChange={(e) => handleCorregimientoChange(e.target.value)}
-                                            >
-                                                <option value="">Selecciona Corregimiento</option>
-                                                {provinciasData.find((provincia) => provincia.name === province)?.districts.find((distrito) => distrito.name === district)?.corregimientos.map((corr) => (
-                                                    <option key={corr} value={corr}>{corr}</option>
-                                                ))}
-                                            </select>
-                                        )}
-                                        {errors.corregimiento && <p className="text-red-500 text-sm">Por favor selecciona el corregimiento.</p>}
-                                    </>
-                                )}
-                                <button
-                                    className="bg-blue-500 text-white px-4 py-2 rounded mt-4 hover:bg-blue-600"
-                                    onClick={handleUseCurrentLocation}
-                                >
-                                    Usar Ubicación Actual
-                                </button>
-                                <LoadScript googleMapsApiKey="AIzaSyCEowo0H2S9ve_rpnPTeUr0_AqKtM26uAo">
-                                    <GoogleMap
-                                        mapContainerClassName="mt-4 h-96"
-                                        center={selectedLocation || { lat: 8.9824, lng: -79.5199 }}
-                                        zoom={12}
-                                        onClick={handleMapClick}
-                                    >
-                                        {selectedLocation && (
-                                            <Marker position={selectedLocation} />
-                                        )}
-                                    </GoogleMap>
-                                </LoadScript>
-                                {selectedLocationInfo && (
-                                    <p className="mt-2">Ubicación Seleccionada: {selectedLocationInfo}</p>
-                                )}
-                            </>
-                        )}
-                        <button
-                            className="bg-green-500 text-white px-6 py-3 rounded mt-4 hover:bg-green-600"
-                            onClick={handleSubmit}
-                        >
-                            Confirmar Orden
-                        </button>
                     </div>
+                ))}
+            </div>
+            <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <h2 className="text-xl">Resumen de Pedido</h2>
+                    {order.length === 0 ? (
+                        <p>No hay productos en el pedido.</p>
+                    ) : (
+                        <ul>
+                            {order.map(item => (
+                                <li key={`${item.id}-${item.size}`}>
+                                    {item.name} - {item.size} - {item.quantity}
+                                    <button onClick={() => handleRemoveFromOrder(item, item.size)} className="ml-2 text-red-500">Eliminar</button>
+                                </li>
+                            ))}
+                        </ul>
+                    )}
                 </div>
+                <div>
+                    <label className="block">Nombre</label>
+                    <input type="text" value={name} onChange={(e) => setName(e.target.value)} className="w-full border p-2 rounded" />
+                    {errors.name && <span className="text-red-500">Este campo es requerido</span>}
+                </div>
+                <div>
+                    <label className="block">Teléfono</label>
+                    <input type="text" value={phone} onChange={(e) => setPhone(e.target.value)} className="w-full border p-2 rounded" />
+                    {errors.phone && <span className="text-red-500">Este campo es requerido</span>}
+                </div>
+                <div>
+                    <label className="block">Correo Electrónico</label>
+                    <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full border p-2 rounded" />
+                    {errors.email && <span className="text-red-500">Este campo es requerido</span>}
+                </div>
+                <div>
+                    <label className="block">Provincia</label>
+                    <select value={province} onChange={(e) => setProvince(e.target.value)} className="w-full border p-2 rounded">
+                        <option value="">Selecciona una provincia</option>
+                        {provinciasData.map((provincia) => (
+    <option key={provincia.id} value={provincia.name}>{provincia.name}</option>
+))}
+                    </select>
+                    {errors.province && <span className="text-red-500">Este campo es requerido</span>}
+                </div>
+                <div>
+                    <label className="block">Distrito</label>
+                    <input type="text" value={district} onChange={(e) => setDistrict(e.target.value)} className="w-full border p-2 rounded" />
+                    {errors.district && <span className="text-red-500">Este campo es requerido</span>}
+                </div>
+                <div>
+                    <label className="block">Corregimiento</label>
+                    <input type="text" value={corregimiento} onChange={(e) => setCorregimiento(e.target.value)} className="w-full border p-2 rounded" />
+                    {errors.corregimiento && <span className="text-red-500">Este campo es requerido</span>}
+                </div>
+                <div>
+                    <label className="block">¿Requiere entrega a domicilio?</label>
+                    <input type="checkbox" checked={requireDelivery} onChange={(e) => setRequireDelivery(e.target.checked)} />
+                </div>
+                {requireDelivery && (
+                    <div>
+                        <button onClick={handleUseCurrentLocation} className="bg-blue-500 text-white px-2 py-1 rounded">Usar ubicación actual</button>
+                        {selectedLocation && (
+                            <LoadScript googleMapsApiKey="AIzaSyCEowo0H2S9ve_rpnPTeUr0_AqKtM26uAo">
+                                <GoogleMap
+                                    mapContainerStyle={{ height: "300px", marginTop: "10px" }}
+                                    center={selectedLocation}
+                                    zoom={15}
+                                    onClick={handleMapClick}
+                                >
+                                    <Marker position={selectedLocation} />
+                                </GoogleMap>
+                            </LoadScript>
+                        )}
+                    </div>
+                )}
             </div>
             <div className="mt-8">
-                <h2 className="text-xl font-semibold mb-2">Total a Pagar</h2>
-                <p className="text-gray-500">El total incluye el costo de todos los ceviches seleccionados y el envío si aplica:</p>
-                <p className="text-2xl font-bold text-green-600">${total.toFixed(2)}</p>
+                <button onClick={handleSubmit} className="bg-green-500 text-white px-4 py-2 rounded">Enviar Pedido</button>
             </div>
         </div>
     );

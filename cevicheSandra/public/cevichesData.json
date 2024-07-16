@@ -3,42 +3,42 @@
         "id": 1,
         "name": "Ceviche Tradicional Corvina",
         "prices": { "7oz": 3.00, "16oz": 8.50, "24oz": 10.00, "medio galon": 20.00, "galon": 40.00 },
-        "img": "/corvinaTradicional.png"
+        "image": "/corvinaTradicional.png"
     },
     {
         "id": 2,
         "name": "Ceviche Camarón",
         "prices": { "7oz": 4.00, "16oz": 10.00, "24oz": 12.00, "medio galon": 20.00, "galon": 50.00 },
-        "img": "/camaronTradicional.png"
+        "image": "/camaronTradicional.png"
     },
     {
         "id": 3,
         "name": "Ceviche Mixto",
         "prices": { "7oz": 4.00, "16oz": 10.00, "24oz": 12.00, "medio galon": 20.00, "galon": 50.00 },
-        "img": "/mixtoTradicional.png"
+        "image": "/mixtoTradicional.png"
     },
     {
         "id": 4,
         "name": "Ceviche Concha Negra",
         "prices": { "7oz": 4.00, "16oz": 10.00, "24oz": 12.00, "medio galon": 20.00, "galon": 50.00 },
-        "img": "/conchaNegraTradicional.png"
+        "image": "/conchaNegraTradicional.png"
     },
     {
         "id": 5,
         "name": "Coctel Mixto",
         "prices": { "7oz": 4.00, "16oz": 10.00, "24oz": 12.00, "medio galon": 20.00, "galon": 50.00 },
-        "img": "/mixtoCoctel.png"
+        "image": "/mixtoCoctel.png"
     },
     {
         "id": 6,
         "name": "Coctel Camarón",
         "prices": { "7oz": 4.00, "16oz": 10.00, "24oz": 12.00, "medio galon": 20.00, "galon": 50.00 },
-        "img": "/coctelCamarones.png"
+        "image": "/coctelCamarones.png"
     },
     {
         "id": 7,
         "name": "Coctel Corvina",
         "prices": { "7oz": 3.00, "16oz": 7.50, "24oz": 10.00, "medio galon": 20.00, "galon": 40.00 },
-        "img": "/coctelTradicional.png"
+        "image": "/coctelTradicional.png"
     }
 ]
