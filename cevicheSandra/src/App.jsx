@@ -18,8 +18,8 @@ const Home = () => {
 
   return (
     <div className="container mx-auto p-6">
-      <header className="flex justify-between items-center py-4 bg-yellow-200 rounded-lg shadow-lg">
-        <div className="flex items-center">
+<header className="flex justify-between items-center py-4 bg-header-bg rounded-lg shadow-lg">
+<div className="flex items-center">
           <i className="fas fa-utensils text-3xl text-red-600"></i>
           <img src={logo} alt="CevicheSandra Logo" className="h-16 w-16 ml-2"/> {/* Ajusta el tamaño del logo aquí */}
           <span className="ml-4 text-3xl font-bold text-gray-800">CevicheSandra</span> {/* Ajusta el estilo del texto aquí */}

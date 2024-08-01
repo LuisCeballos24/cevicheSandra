@@ -1,0 +1,8 @@
+const colors = [
+    { name: 'Azul turquesa oscuro', hex: '#006D77' },
+    { name: 'Azul turquesa claro', hex: '#83C5BE' },
+    { name: 'Rojo coral', hex: '#E29578' },
+    { name: 'Naranja coral', hex: '#FFDDD2' },
+    { name: 'Blanco crema', hex: '#EDF6F9' },
+    { name: 'Gris azulado', hex: '#006D77' }
+  ];
