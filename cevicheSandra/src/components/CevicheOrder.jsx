@@ -13,6 +13,7 @@ const CevicheOrder = () => {
   const [quantities, setQuantities] = useState({});
   const [requireDelivery, setRequireDelivery] = useState(false);
   const [user, setUser] = useState(null);
+  const [showSuccessPopup, setShowSuccessPopup] = useState(false);
 
   useEffect(() => {
     const fetchCevichesData = async () => {
@@ -22,7 +23,7 @@ const CevicheOrder = () => {
         const data = await response.json();
         setCevichesData(data);
         setSelectedSizes(data.reduce((acc, ceviche) => {
-          acc[ceviche.id] = '';
+          acc[ceviche.id] = ''; // Inicializar con cadena vacía para permitir deselección
           return acc;
         }, {}));
         setQuantities(data.reduce((acc, ceviche) => {
@@ -35,6 +36,11 @@ const CevicheOrder = () => {
     };
 
     fetchCevichesData();
+  }, []);
+
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged(setUser);
+    return () => unsubscribe(); // Cleanup subscription on unmount
   }, []);
 
   const handleSizeChange = (id, size) => {
@@ -57,32 +63,51 @@ const CevicheOrder = () => {
     try {
       const result = await signInWithPopup(auth, provider);
       setUser(result.user);
-      handleSendOrder(result.user);
     } catch (error) {
       console.error('Error signing in with Google', error);
     }
   };
 
-  const handleSendOrder = (loggedInUser) => {
-    // Filtrar ceviches seleccionados
-    const orderData = cevichesData
-      .map(ceviche => ({
-        name: ceviche.name,
-        size: selectedSizes[ceviche.id],
-        quantity: quantities[ceviche.id],
-      }))
-      .filter(item => item.size && item.quantity > 0); // Solo incluir ceviches con tamaño y cantidad seleccionados
+  const validateOrder = () => {
+    // Validar si al menos un ceviche ha sido seleccionado
+    const selectedCeviches = Object.keys(selectedSizes).filter(id => selectedSizes[id] && quantities[id] > 0);
+    if (selectedCeviches.length === 0) {
+      return 'Debes seleccionar al menos un ceviche para continuar con el pedido.';
+    }
+    return null;
+  };
 
-    const customerDetails = {
-      name: loggedInUser.displayName,
-      email: loggedInUser.email
-    };
+  const handleSendOrder = async (loggedInUser) => {
+    const validationError = validateOrder();
+    if (validationError) {
+      setErrors(validationError);
+      return;
+    }
 
-    const customerLocation = requireDelivery
-      ? selectedLocation
-      : 'No Delivery';
+    try {
+      // Filtrar ceviches seleccionados
+      const orderData = cevichesData
+        .map(ceviche => ({
+          name: ceviche.name,
+          size: selectedSizes[ceviche.id],
+          quantity: quantities[ceviche.id],
+        }))
+        .filter(item => item.size && item.quantity > 0); // Solo incluir ceviches con tamaño y cantidad seleccionados
 
-    OrderSender(orderData, customerDetails, customerLocation, loggedInUser.email);
+      const customerDetails = {
+        name: loggedInUser.displayName,
+        email: loggedInUser.email
+      };
+
+      const customerLocation = requireDelivery
+        ? selectedLocation
+        : 'No Delivery';
+
+      await OrderSender(orderData, customerDetails, customerLocation, loggedInUser.email);
+      setShowSuccessPopup(true); // Mostrar ventana emergente de éxito
+    } catch (error) {
+      setErrors(`Error sending order: ${error.message}`);
+    }
   };
 
   const handleContinueOrder = () => {
@@ -119,35 +144,26 @@ const CevicheOrder = () => {
 
   return (
     <div className="p-4">
-      <div className="flex flex-col md:flex-row justify-between items-center mb-6">
-        <div className="flex items-center mb-4 md:mb-0">
-          <i className="fas fa-chevron-left text-3xl"></i>
-          <h1 className="ml-3 text-3xl font-bold">Compra Ceviche!</h1>
-        </div>
-        <div className="flex items-center">
-          {user ? (
-            <>
-              <span className="mr-3 text-xl">{user.displayName}</span>
-              <img
-                src={user.photoURL}
-                alt="User profile picture"
-                className="rounded-full"
-                width="60"
-                height="60"
-              />
-              <i className="fas fa-bars text-3xl ml-3"></i>
-            </>
-          ) : (
-            <button onClick={handleLogin} className="bg-blue-500 text-white py-1 px-3 rounded-lg">
-              Iniciar Sesión
+      {/* Ventana emergente de éxito */}
+      {showSuccessPopup && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white p-6 rounded-lg shadow-lg">
+            <h2 className="text-2xl font-bold mb-4">¡Correo Enviado!</h2>
+            <p className="text-xl mb-4">¡Gracias por su compra, {user?.displayName}!</p>
+            <button
+              onClick={() => setShowSuccessPopup(false)}
+              className="bg-blue-500 text-white py-2 px-4 rounded-lg"
+            >
+              Cerrar
             </button>
-          )}
+          </div>
         </div>
-      </div>
+      )}
+
       <div className="flex flex-col md:flex-row justify-between mb-6">
-        <h2 className="text-2xl font-bold mb-4 md:mb-0">Carrito de Compra</h2>
-        <h2 className="text-2xl font-bold">Detalles de la compra</h2>
+        <h1 className="text-3xl font-bold">Compra Ceviche!</h1>
       </div>
+      
       <p className="mb-6 text-xl">Elige uno de nuestros ceviches</p>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         {cevichesData.map((ceviche) => (
@@ -167,7 +183,7 @@ const CevicheOrder = () => {
                 onChange={(e) => handleSizeChange(ceviche.id, e.target.value)}
                 className="mt-2 p-2 rounded border border-gray-300"
               >
-                <option value="" disabled>Selecciona un tamaño</option>
+                <option value="">Selecciona un tamaño</option> {/* Opción vacía */}
                 {Object.keys(ceviche.prices).map((size) => (
                   <option key={size} value={size}>
                     {size}
@@ -186,17 +202,15 @@ const CevicheOrder = () => {
           </div>
         ))}
       </div>
-      <div className="flex items-center mt-6">
+      <div className="flex flex-col md:flex-row items-center mt-6">
         <input
-          className="mr-3"
-          id="delivery"
           type="checkbox"
           checked={requireDelivery}
-          onChange={() => setRequireDelivery(!requireDelivery)}
+          onChange={(e) => setRequireDelivery(e.target.checked)}
+          className="mr-2"
         />
-        <label htmlFor="delivery" className="text-xl">Requiere Delivery?</label>
-      </div>
-      {requireDelivery && (
+        <label>¿Requieres entrega?</label>
+        {requireDelivery && (
         <div className="mt-4">
           <button
             onClick={handleUseCurrentLocation}
@@ -213,24 +227,16 @@ const CevicheOrder = () => {
           </div>
         </div>
       )}
-      {selectedLocation && (
-        <div className="mt-4">
-          <h3 className="text-2xl font-bold">Ubicación Seleccionada:</h3>
-          <p className="text-xl">Latitud: {selectedLocation.lat}</p>
-          <p className="text-xl">Longitud: {selectedLocation.lng}</p>
-        </div>
-      )}
-      <button
-        onClick={handleContinueOrder}
-        className="bg-green-500 text-white py-2 px-4 rounded-lg mt-4"
-      >
-        Continuar con el Pedido
-      </button>
-      {errors && (
-        <div className="mt-4 p-4 bg-red-200 rounded-lg">
-          <p className="text-red-800">{errors}</p>
-        </div>
-      )}
+      </div>
+      <div className="mt-6">
+        {errors && <p className="text-red-500 mb-4">{errors}</p>}
+        <button
+          onClick={handleContinueOrder}
+          className="bg-green-500 text-white py-2 px-4 rounded-lg"
+        >
+          {user ? 'Finalizar Pedido' : 'Iniciar Sesión'}
+        </button>
+      </div>
     </div>
   );
 };
