@@ -83,11 +83,19 @@ const createGoogleMapsLink = (latitude, longitude) => {
   return `https://www.google.com/maps?q=${latitude},${longitude}`;
 };
 
+// Función para detectar si el navegador es Safari
+const isSafari = () => {
+  const ua = navigator.userAgent.toLowerCase();
+  return ua.indexOf('safari') !== -1 && ua.indexOf('chrome') === -1;
+};
+
 const OrderSender = async (order, customerDetails, customerLocation, email) => {
   try {
-    // Inicializar cliente de Google API
-    await initClient();
-    console.log('Google API client initialized.');
+    // Inicializar cliente de Google API si no es Safari
+    if (!isSafari()) {
+      await initClient();
+      console.log('Google API client initialized.');
+    }
 
     // Filtrar ceviches seleccionados
     const selectedOrder = order.filter(item => item.size && item.quantity > 0);
@@ -100,18 +108,20 @@ const OrderSender = async (order, customerDetails, customerLocation, email) => {
 
     // Generar el PDF
     const pdfData = generatePDF(selectedOrder, customerDetails, totalOrderPrice, deliveryPrice);
-    
-    // Convertir data URI a Blob
-    const pdfBlob = await fetch(pdfData).then(res => res.blob());
-    const pdfFile = new File([pdfBlob], `${customerDetails.name}.pdf`, { type: 'application/pdf' });
 
-    // Subir el archivo a Google Drive
     let driveLink = '';
-    try {
-      driveLink = await uploadToGoogleDrive(pdfFile);
-      console.log('Archivo subido a Google Drive:', driveLink);
-    } catch (error) {
-      console.error('Error al subir el archivo a Google Drive:', error.message || error);
+    if (!isSafari()) {
+      // Convertir data URI a Blob
+      const pdfBlob = await (await fetch(pdfData)).blob();
+      const pdfFile = new File([pdfBlob], `${customerDetails.name}.pdf`, { type: 'application/pdf' });
+
+      // Subir el archivo a Google Drive
+      try {
+        driveLink = await uploadToGoogleDrive(pdfFile);
+        console.log('Archivo subido a Google Drive:', driveLink);
+      } catch (error) {
+        console.error('Error al subir el archivo a Google Drive:', error.message || error);
+      }
     }
 
     // Crear el enlace de Google Maps para la ubicación del cliente
@@ -132,7 +142,7 @@ const OrderSender = async (order, customerDetails, customerLocation, email) => {
 
       Total del Pedido: ${totalOrderPrice.toFixed(2)}
 
-      Recibirás un PDF con los detalles del pedido en el siguiente enlace: [Ver PDF](${driveLink})
+      ${!isSafari() ? `Recibirás un PDF con los detalles del pedido en el siguiente enlace: [Ver PDF](${driveLink})` : ''}
 
       Ubicación del Cliente en Google Maps: [Ver Mapa](${mapsLink})
     
@@ -140,13 +150,16 @@ const OrderSender = async (order, customerDetails, customerLocation, email) => {
     `;
 
     // Enviar el correo electrónico
-    await sendEmail({
-      to: email,
-      subject: 'Confirmación de Pedido',
-      body: emailBody
-    });
-
-    console.log('Correo enviado con éxito!');
+    try {
+      await sendEmail({
+        to: email,
+        subject: 'Confirmación de Pedido',
+        body: emailBody
+      });
+      console.log('Correo enviado con éxito!');
+    } catch (error) {
+      console.error('Error al enviar el correo:', error.message || error);
+    }
 
     // Crear el cuerpo del mensaje de WhatsApp
     const whatsappMessage = `
@@ -171,7 +184,7 @@ const OrderSender = async (order, customerDetails, customerLocation, email) => {
     // Enviar el mensaje de WhatsApp
     const encodedMessage = encodeURIComponent(whatsappMessage.trim());
     const whatsappUrl = `https://api.whatsapp.com/send?phone=67961550&text=${encodedMessage}`;
-    window.location.href = whatsappUrl; // Redirige directamente
+    window.location.href = whatsappUrl;
 
     console.log('Mensaje de WhatsApp enviado con éxito!');
 

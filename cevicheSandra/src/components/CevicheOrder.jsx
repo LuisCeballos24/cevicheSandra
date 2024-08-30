@@ -14,6 +14,7 @@ const CevicheOrder = () => {
   const [requireDelivery, setRequireDelivery] = useState(false);
   const [user, setUser] = useState(null);
   const [showSuccessPopup, setShowSuccessPopup] = useState(false);
+  const [loading, setLoading] = useState(false); // Estado para manejar la carga
 
   useEffect(() => {
     const fetchCevichesData = async () => {
@@ -83,6 +84,8 @@ const CevicheOrder = () => {
       setErrors(validationError);
       return;
     }
+
+    setLoading(true);
 
     try {
       // Filtrar ceviches seleccionados
@@ -157,6 +160,16 @@ const CevicheOrder = () => {
             >
               Cerrar
             </button>
+          </div>
+        </div>
+      )}
+
+       {/* Mensaje de carga */}
+       {loading && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white p-6 rounded-lg shadow-lg">
+            <h2 className="text-xl font-bold mb-4">Procesando Pedido...</h2>
+            <p>Por favor, espera mientras procesamos tu pedido.</p>
           </div>
         </div>
       )}

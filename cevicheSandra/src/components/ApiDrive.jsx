@@ -29,6 +29,12 @@ const fetchEncryptedConfig = async () => {
   }
 };
 
+// Función para detectar Safari
+const isSafari = () => {
+  const ua = navigator.userAgent.toLowerCase();
+  return ua.indexOf('safari') !== -1 && ua.indexOf('chrome') === -1;
+};
+
 export const initClient = async () => {
   try {
     const config = await fetchEncryptedConfig();
@@ -40,8 +46,19 @@ export const initClient = async () => {
           clientId: config.clientId,
           scope: 'https://www.googleapis.com/auth/drive.file'
         }).then(() => {
-          gapi.auth2.getAuthInstance().signIn().then(resolve).catch(reject);
-        }).catch(reject);
+          const authInstance = gapi.auth2.getAuthInstance();
+          const signInMethod = isSafari() ? authInstance.signIn.bind(authInstance) : authInstance.signIn.bind(authInstance);
+          
+          signInMethod()
+            .then(resolve)
+            .catch((error) => {
+              console.error('Error during sign-in:', error);
+              reject(error);
+            });
+        }).catch((error) => {
+          console.error('Error initializing Google API client:', error);
+          reject(error);
+        });
       });
     });
   } catch (error) {
@@ -64,7 +81,7 @@ export const uploadToGoogleDrive = async (file) => {
     }
 
     const config = await fetchEncryptedConfig();
-    const folderId = config.folderId; // Usar el ID de la carpeta desde la configuración
+    const folderId = config.folderId;
     const uniqueFileName = `${new Date().toISOString()}_${file.name}`;
     const metadata = {
       name: uniqueFileName,
@@ -80,7 +97,8 @@ export const uploadToGoogleDrive = async (file) => {
     const response = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${accessToken}`
+        'Authorization': `Bearer ${accessToken}`,
+        'Accept': 'application/json'
       },
       body: form
     });
@@ -94,7 +112,7 @@ export const uploadToGoogleDrive = async (file) => {
     console.log('Datos recibidos:', data); // Verifica el contenido de la respuesta
 
     // Hacer el archivo accesible públicamente
-    await fetch(`https://www.googleapis.com/drive/v3/files/${data.id}/permissions`, {
+    const permissionsResponse = await fetch(`https://www.googleapis.com/drive/v3/files/${data.id}/permissions`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${accessToken}`,
@@ -105,6 +123,10 @@ export const uploadToGoogleDrive = async (file) => {
         type: 'anyone'
       })
     });
+
+    if (!permissionsResponse.ok) {
+      throw new Error('Error setting file permissions');
+    }
 
     // Obtener el enlace de visualización
     const fileResponse = await fetch(`https://www.googleapis.com/drive/v3/files/${data.id}?fields=webViewLink,webContentLink`, {
@@ -121,6 +143,7 @@ export const uploadToGoogleDrive = async (file) => {
     const fileData = await fileResponse.json();
     return fileData.webContentLink || 'Enlace no disponible';
   } catch (error) {
+    console.error(`Error uploading file to Google Drive: ${error.message}`);
     throw new Error(`Error uploading file to Google Drive: ${error.message}`);
   }
 };
