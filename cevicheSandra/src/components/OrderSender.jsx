@@ -1,7 +1,7 @@
 import React from 'react';
 import { sendEmail } from './EmailServices';
 import { generatePDF } from './PdfGenerator';
-import { uploadToGoogleDrive, initClient } from './ApiDrive'; // Importar funciones necesarias
+import { uploadToGoogleDrive, initClient } from './ApiDrive';
 
 // Coordenadas fijas para las ubicaciones
 const locations = [
@@ -69,6 +69,20 @@ const calculateDeliveryPrice = (customerLocation) => {
   return distance * deliveryCostPerKm;
 };
 
+// Función para calcular el precio total del pedido
+const calculateTotalOrderPrice = (order) => {
+  return order.reduce((total, item) => {
+    const price = item.price || 0;
+    const quantity = item.quantity || 0;
+    return total + (price * quantity);
+  }, 0);
+};
+
+// Función para crear un enlace de Google Maps
+const createGoogleMapsLink = (latitude, longitude) => {
+  return `https://www.google.com/maps?q=${latitude},${longitude}`;
+};
+
 const OrderSender = async (order, customerDetails, customerLocation, email) => {
   try {
     // Inicializar cliente de Google API
@@ -78,15 +92,18 @@ const OrderSender = async (order, customerDetails, customerLocation, email) => {
     // Filtrar ceviches seleccionados
     const selectedOrder = order.filter(item => item.size && item.quantity > 0);
 
+    // Calcular el precio total del pedido
+    const totalOrderPrice = calculateTotalOrderPrice(selectedOrder);
+
     // Calcular el costo de entrega
     const deliveryPrice = calculateDeliveryPrice(customerLocation);
 
     // Generar el PDF
-    const pdfData = generatePDF(selectedOrder, customerDetails, customerLocation, locations);
+    const pdfData = generatePDF(selectedOrder, customerDetails, totalOrderPrice, deliveryPrice);
     
     // Convertir data URI a Blob
     const pdfBlob = await fetch(pdfData).then(res => res.blob());
-    const pdfFile = new File([pdfBlob], 'order-details.pdf', { type: 'application/pdf' });
+    const pdfFile = new File([pdfBlob], `${customerDetails.name}.pdf`, { type: 'application/pdf' });
 
     // Subir el archivo a Google Drive
     let driveLink = '';
@@ -96,6 +113,9 @@ const OrderSender = async (order, customerDetails, customerLocation, email) => {
     } catch (error) {
       console.error('Error al subir el archivo a Google Drive:', error.message || error);
     }
+
+    // Crear el enlace de Google Maps para la ubicación del cliente
+    const mapsLink = createGoogleMapsLink(customerLocation.lat, customerLocation.lng);
 
     // Crear el cuerpo del correo electrónico
     const emailBody = `
@@ -110,8 +130,12 @@ const OrderSender = async (order, customerDetails, customerLocation, email) => {
 
       Costo de Entrega: ${deliveryPrice.toFixed(2)}
 
+      Total del Pedido: ${totalOrderPrice.toFixed(2)}
+
       Recibirás un PDF con los detalles del pedido en el siguiente enlace: [Ver PDF](${driveLink})
 
+      Ubicación del Cliente en Google Maps: [Ver Mapa](${mapsLink})
+    
       ¡Gracias por tu compra!
     `;
 
@@ -123,6 +147,34 @@ const OrderSender = async (order, customerDetails, customerLocation, email) => {
     });
 
     console.log('Correo enviado con éxito!');
+
+    // Crear el cuerpo del mensaje de WhatsApp
+    const whatsappMessage = `
+      ¡Nuevo pedido recibido!
+
+      Detalles del Pedido:
+      Nombre: ${customerDetails.name}
+      Correo Electrónico: ${customerDetails.email}
+
+      Productos:
+      ${selectedOrder.map(item => `${item.name} - ${item.size} - ${item.quantity}`).join('\n')}
+
+      Costo de Entrega: ${deliveryPrice.toFixed(2)}
+
+      Total del Pedido: ${totalOrderPrice.toFixed(2)}
+
+      Ubicación del Cliente en Google Maps: ${mapsLink}
+
+      ¡Gracias por tu compra!
+    `;
+
+    // Enviar el mensaje de WhatsApp
+    const encodedMessage = encodeURIComponent(whatsappMessage.trim());
+    const whatsappUrl = `https://api.whatsapp.com/send?phone=67961550&text=${encodedMessage}`;
+    window.location.href = whatsappUrl; // Redirige directamente
+
+    console.log('Mensaje de WhatsApp enviado con éxito!');
+
   } catch (error) {
     console.error('Error al procesar el pedido:', error.message || error);
   }

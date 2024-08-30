@@ -87,13 +87,14 @@ const CevicheOrder = () => {
     try {
       // Filtrar ceviches seleccionados
       const orderData = cevichesData
-        .map(ceviche => ({
-          name: ceviche.name,
-          size: selectedSizes[ceviche.id],
-          quantity: quantities[ceviche.id],
-        }))
-        .filter(item => item.size && item.quantity > 0); // Solo incluir ceviches con tamaño y cantidad seleccionados
-
+      .map(ceviche => ({
+        name: ceviche.name,
+        size: selectedSizes[ceviche.id],
+        quantity: quantities[ceviche.id],
+        price: ceviche.prices[selectedSizes[ceviche.id]] || 0, // Añade el precio según el tamaño seleccionado
+      }))
+      .filter(item => item.size && item.quantity > 0); // Solo incluir ceviches con tamaño y cantidad seleccionados
+    
       const customerDetails = {
         name: loggedInUser.displayName,
         email: loggedInUser.email

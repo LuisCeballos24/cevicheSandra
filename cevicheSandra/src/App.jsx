@@ -8,6 +8,8 @@ import CompraCeviche from './components/CompraCeviche';
 import Footer from './components/Footer';
 import Contacto from './components/Contacto';
 import About from './components/About';
+import Menu from './components/Menu'
+import CevicheDetail from './components/CevicheDetail';
 
 const App = () => {
   const [user, setUser] = useState(null);
@@ -49,6 +51,8 @@ const App = () => {
         <Route path="/shop" element={<CompraCeviche />} />
         <Route path="/contacto" element={<Contacto />} />
         <Route path="/nosotros" element={<About />} />
+        <Route path="/menu" element={<Menu />} />
+        <Route path="/ceviche/:id" element={<CevicheDetail />} />
       </Routes>
       <Footer/>
     </Router>
