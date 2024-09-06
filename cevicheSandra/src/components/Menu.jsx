@@ -30,38 +30,81 @@ const Menu = () => {
   // Configuración del carrusel
   const settings = {
     dots: true,
-    infinite: false, // Cambiado a false para evitar la repetición
+    infinite: true,
     speed: 500,
     slidesToShow: 1,
     slidesToScroll: 1,
-    adaptiveHeight: true, // Ajustar la altura del slider según el contenido
+    adaptiveHeight: true,
+    arrows: false,
+    autoplay: true,
+    autoplaySpeed: 3000,
+    responsive: [
+      {
+        breakpoint: 1024,
+        settings: {
+          slidesToShow: 1,
+          slidesToScroll: 1,
+        },
+      },
+      {
+        breakpoint: 768,
+        settings: {
+          slidesToShow: 1,
+          slidesToScroll: 1,
+        },
+      },
+      {
+        breakpoint: 480,
+        settings: {
+          slidesToShow: 1,
+          slidesToScroll: 1,
+        },
+      },
+    ],
   };
 
   return (
-    <div className="p-4">
+    <div className="p-4 md:p-6 lg:p-8">
       <div className="flex flex-col md:flex-row justify-between mb-6">
-        <h1 className="text-3xl font-bold">Menú de Ceviches</h1>
+        <h1 className="text-2xl md:text-3xl font-bold text-center md:text-left">Menú de Ceviches</h1>
       </div>
-      
-      <p className="mb-6 text-xl">Descubre nuestros ceviches</p>
+
+      {/* Indicación destacada */}
+      <div className="bg-[rgba(226,149,120,0.8)] rounded-lg shadow-lg text-center p-4 mb-6">
+        <p className="text-lg md:text-xl font-semibold text-gray-800">¡Haz clic en un ceviche para saber más sobre su historia o reseña!</p>
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         {cevichesData.map((ceviche) => (
           <div
             key={ceviche.id}
-            className="bg-red-200 bg-opacity-50 p-4 rounded-lg flex flex-col items-center cursor-pointer"
+            className="bg-[rgba(226,149,120,0.8)] rounded-lg shadow-lg p-4 flex flex-col items-center cursor-pointer hover:bg-yellow-100 transition duration-300 ease-in-out"
             onClick={() => handleCevicheClick(ceviche)}
           >
-            <Slider {...settings} className="w-full">
-              <div className="w-full h-64 md:h-80 overflow-hidden">
+            {typeof ceviche.image === 'object' && Object.values(ceviche.image).length > 1 ? (
+              // Carrusel si hay múltiples imágenes
+              <Slider {...settings} className="rounded-lg object-cover w-full h-auto">
+                {Object.values(ceviche.image).map((imageSrc, index) => (
+                  <div key={index} className="rounded-lg object-cover w-full h-auto">
+                    <img
+                      src={imageSrc}
+                      alt={`${ceviche.name} ${index + 1}`}
+                      className="rounded-lg object-cover w-full h-auto"
+                    />
+                  </div>
+                ))}
+              </Slider>
+            ) : (
+              // Mostrar una sola imagen si solo hay una
+              <div className="rounded-lg object-cover w-full h-auto">
                 <img
-                  src={ceviche.image}
+                  src={typeof ceviche.image === 'string' ? ceviche.image : Object.values(ceviche.image)[0]}
                   alt={ceviche.name}
-                  className="w-full h-full object-cover rounded-lg"
+                  className="rounded-lg object-cover w-full h-auto"
                 />
               </div>
-            </Slider>
-            <h3 className="text-xl md:text-2xl font-bold mt-4">{ceviche.name}</h3>
-            {/* Mostrar precios si es necesario */}
+            )}
+            <h3 className="text-lg md:text-xl font-bold mt-4 text-center">{ceviche.name}</h3>
           </div>
         ))}
       </div>

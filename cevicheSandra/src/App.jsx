@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import { getAuth, signInWithPopup, signOut } from 'firebase/auth';
-import { googleProvider } from './components/FirebaseConfig'; // Ajusta la ruta según tu estructura de carpetas
+import { googleProvider } from './components/FirebaseConfig';
 import Header from './components/Header';
 import Home from './components/Home';
-import CompraCeviche from './components/CompraCeviche';
+import CevicheOrden from './components/CevicheOrden';
 import Footer from './components/Footer';
 import Contacto from './components/Contacto';
 import About from './components/About';
-import Menu from './components/Menu'
+import Menu from './components/Menu';
 import CevicheDetail from './components/CevicheDetail';
 
 const App = () => {
@@ -48,13 +48,13 @@ const App = () => {
       />
       <Routes>
         <Route path="/" element={<Home />} />
-        <Route path="/shop" element={<CompraCeviche />} />
+        <Route path="/shop" element={<CevicheOrden />} />
         <Route path="/contacto" element={<Contacto />} />
         <Route path="/nosotros" element={<About />} />
         <Route path="/menu" element={<Menu />} />
         <Route path="/ceviche/:id" element={<CevicheDetail />} />
       </Routes>
-      <Footer/>
+      <Footer />
     </Router>
   );
 };

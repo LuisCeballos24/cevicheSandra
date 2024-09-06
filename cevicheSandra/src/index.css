@@ -98,10 +98,28 @@ body::before {
   background: #0056b3;
 }
 
-.slider-img {
-  width: 600px; /* Ajusta el ancho deseado */
-  height: 400px; /* Ajusta la altura deseada */
-  object-fit: cover; /* Asegura que la imagen cubra el área del contenedor */
-  border-radius: 0.5rem; /* Aplica el radio de borde para redondear las esquinas */
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Aplica sombra para un efecto visual */
+footer {
+  background: rgba(226, 149, 120, 0.8);
+  box-shadow: none;
+  transition: box-shadow 0.3s;
+}
+
+footer:hover {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.carousel {
+  display: flex;
+  overflow-x: scroll;
+  scroll-snap-type: x mandatory;
+}
+
+.carousel-slide {
+  min-width: 100%;
+  scroll-snap-align: start;
+}
+
+.carousel-slide img {
+  width: 100%;
+  height: auto;
 }

@@ -104,7 +104,7 @@ const OrderSender = async (order, customerDetails, customerLocation, email) => {
     const totalOrderPrice = calculateTotalOrderPrice(selectedOrder);
 
     // Calcular el costo de entrega
-    const deliveryPrice = calculateDeliveryPrice(customerLocation);
+    const deliveryPrice = customerLocation ? calculateDeliveryPrice(customerLocation) : 0;
 
     // Generar el PDF
     const pdfData = generatePDF(selectedOrder, customerDetails, totalOrderPrice, deliveryPrice);
@@ -125,7 +125,7 @@ const OrderSender = async (order, customerDetails, customerLocation, email) => {
     }
 
     // Crear el enlace de Google Maps para la ubicación del cliente
-    const mapsLink = createGoogleMapsLink(customerLocation.lat, customerLocation.lng);
+    const mapsLink = customerLocation ? createGoogleMapsLink(customerLocation.lat, customerLocation.lng) : '';
 
     // Crear el cuerpo del correo electrónico
     const emailBody = `
@@ -142,9 +142,9 @@ const OrderSender = async (order, customerDetails, customerLocation, email) => {
 
       Total del Pedido: ${totalOrderPrice.toFixed(2)}
 
-      ${!isSafari() ? `Recibirás un PDF con los detalles del pedido en el siguiente enlace: [Ver PDF](${driveLink})` : ''}
+      ${!isSafari() && driveLink ? `Recibirás un PDF con los detalles del pedido en el siguiente enlace: [Ver PDF](${driveLink})` : ''}
 
-      Ubicación del Cliente en Google Maps: [Ver Mapa](${mapsLink})
+      ${mapsLink ? `Ubicación del Cliente en Google Maps: [Ver Mapa](${mapsLink})` : ''}
     
       ¡Gracias por tu compra!
     `;
@@ -176,7 +176,7 @@ const OrderSender = async (order, customerDetails, customerLocation, email) => {
 
       Total del Pedido: ${totalOrderPrice.toFixed(2)}
 
-      Ubicación del Cliente en Google Maps: ${mapsLink}
+      ${mapsLink ? `Ubicación del Cliente en Google Maps: ${mapsLink}` : ''}
 
       ¡Gracias por tu compra!
     `;

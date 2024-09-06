@@ -1,37 +1,39 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import logo from '/logo.png'; // Ajusta la ruta del logo según la estructura de tu proyecto
-import { FaFacebookF, FaTwitter, FaInstagram, FaLinkedin } from 'react-icons/fa'; // Puedes instalar react-icons para los íconos de redes sociales
+import logo from '/logo.png'; // Asegúrate de que la ruta del logo es correcta
+import { FaFacebookF, FaTwitter, FaInstagram, FaLinkedin } from 'react-icons/fa'; // Asegúrate de tener react-icons instalados
+import { FaMapMarkerAlt, FaHome, FaInfoCircle, FaConciergeBell, FaPhone, FaShoppingCart } from 'react-icons/fa'; // Iconos para secciones del footer
 
 const Footer = () => {
   const [ubicaciones, setUbicaciones] = useState([]);
 
   useEffect(() => {
-    fetch('/ubicaciones.json')
+    fetch('/ubicaciones.json') // Asegúrate de que la ruta del archivo JSON es correcta
       .then(response => response.json())
       .then(data => setUbicaciones(data))
       .catch(error => console.error('Error fetching ubicaciones:', error));
   }, []);
 
   return (
-    <footer className="bg-[rgba(226,149,120,0.8)] rounded-lg shadow-lg py-8 px-6">
-      <div className="container mx-auto flex flex-col md:flex-row justify-between items-start md:items-center">
+    <footer className="bg-[rgba(226,149,120,0.8)] rounded-lg py-6 px-4 shadow-none hover:shadow-lg hover:shadow-black transition-shadow duration-300">
+      <div className="container mx-auto flex flex-col md:flex-row justify-between items-start space-y-6 md:space-y-0">
         {/* Logo */}
-        <div className="w-full md:w-1/4 mb-4 md:mb-0 flex justify-center md:justify-start">
-          <img src={logo} alt="CevicheSandra Logo" className="h-32 w-32 md:h-64 md:w-64" />
+        <div className="w-full md:w-1/4 flex justify-center md:justify-start">
+          <img src={logo} alt="CevicheSandra Logo" className="h-24 w-24 md:h-32 md:w-32" />
         </div>
 
         {/* Información de Contacto */}
-        <div className="w-full md:w-1/4 mb-4 md:mb-0">
-          <h2 className="text-xl font-bold text-gray-800 mb-2">Ubicaciones</h2>
-          <ul className="space-y-2">
+        <div className="w-full md:w-1/4">
+          <h2 className="text-xl font-bold text-gray-800 mb-4">Ubicaciones</h2>
+          <ul className="space-y-3">
             {ubicaciones.map((ubicacion, index) => (
-              <li key={index}>
+              <li key={index} className="flex items-center space-x-2">
+                <FaMapMarkerAlt className="text-gray-800" />
                 <a
                   href={ubicacion.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-gray-800 hover:text-yellow-600 transition duration-300"
+                  className="text-gray-800 hover:text-white hover:bg-yellow-600 transition duration-300 text-sm md:text-base shadow-none hover:shadow-lg hover:shadow-black p-2 rounded"
                 >
                   {ubicacion.name}
                 </a>
@@ -41,32 +43,82 @@ const Footer = () => {
         </div>
 
         {/* Opciones de Navegación */}
-        <div className="w-full md:w-1/4 mb-4 md:mb-0">
-          <h2 className="text-xl font-bold text-gray-800 mb-2">Navegación</h2>
-          <nav className="flex flex-col md:flex-row md:space-x-6">
-            <Link to="/" className="text-gray-800 hover:text-yellow-600 transition duration-300 py-2">Home</Link>
-            <Link to="/about" className="text-gray-800 hover:text-yellow-600 transition duration-300 py-2">About</Link>
-            <Link to="/menu" className="text-gray-800 hover:text-yellow-600 transition duration-300 py-2">Menu</Link>
-            <Link to="/contact" className="text-gray-800 hover:text-yellow-600 transition duration-300 py-2">Contact</Link>
-            <Link to="/shop" className="border border-gray-800 rounded-full px-4 py-2 text-gray-800 hover:bg-gray-800 hover:text-white transition duration-300">Shop</Link>
+        <div className="w-full md:w-1/4">
+          <h2 className="text-xl font-bold text-gray-800 mb-4">Navegación</h2>
+          <nav className="flex flex-col space-y-3">
+            <Link
+              to="/"
+              className="flex items-center space-x-2 text-gray-800 hover:text-white hover:bg-yellow-600 transition duration-300 text-sm md:text-base shadow-none hover:shadow-lg hover:shadow-black p-2 rounded"
+            >
+              <FaHome />
+              <span>Home</span>
+            </Link>
+            <Link
+              to="/nosotros"
+              className="flex items-center space-x-2 text-gray-800 hover:text-white hover:bg-yellow-600 transition duration-300 text-sm md:text-base shadow-none hover:shadow-lg hover:shadow-black p-2 rounded"
+            >
+              <FaInfoCircle />
+              <span>About</span>
+            </Link>
+            <Link
+              to="/menu"
+              className="flex items-center space-x-2 text-gray-800 hover:text-white hover:bg-yellow-600 transition duration-300 text-sm md:text-base shadow-none hover:shadow-lg hover:shadow-black p-2 rounded"
+            >
+              <FaConciergeBell />
+              <span>Menu</span>
+            </Link>
+            <Link
+              to="/contacto"
+              className="flex items-center space-x-2 text-gray-800 hover:text-white hover:bg-yellow-600 transition duration-300 text-sm md:text-base shadow-none hover:shadow-lg hover:shadow-black p-2 rounded"
+            >
+              <FaPhone />
+              <span>Contact</span>
+            </Link>
+            <Link
+              to="/shop"
+              className="flex items-center space-x-2 text-gray-800 hover:text-white hover:bg-yellow-600 transition duration-300 text-sm md:text-base shadow-none hover:shadow-lg hover:shadow-black p-2 rounded"
+            >
+              <FaShoppingCart />
+              <span>Shop</span>
+            </Link>
           </nav>
         </div>
 
         {/* Redes Sociales */}
         <div className="w-full md:w-1/4 flex flex-col items-center md:items-end">
-          <h2 className="text-xl font-bold text-gray-800 mb-2">Síguenos</h2>
+          <h2 className="text-xl font-bold text-gray-800 mb-4">Síguenos</h2>
           <div className="flex space-x-4">
-            <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" className="text-gray-800 hover:text-yellow-600 transition duration-300">
-              <FaFacebookF size={24} />
+            <a
+              href="https://facebook.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-gray-800 hover:text-white hover:bg-yellow-600 transition duration-300 shadow-none hover:shadow-lg hover:shadow-black p-2 rounded"
+            >
+              <FaFacebookF size={20} />
             </a>
-            <a href="https://twitter.com" target="_blank" rel="noopener noreferrer" className="text-gray-800 hover:text-yellow-600 transition duration-300">
-              <FaTwitter size={24} />
+            <a
+              href="https://twitter.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-gray-800 hover:text-white hover:bg-yellow-600 transition duration-300 shadow-none hover:shadow-lg hover:shadow-black p-2 rounded"
+            >
+              <FaTwitter size={20} />
             </a>
-            <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="text-gray-800 hover:text-yellow-600 transition duration-300">
-              <FaInstagram size={24} />
+            <a
+              href="https://instagram.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-gray-800 hover:text-white hover:bg-yellow-600 transition duration-300 shadow-none hover:shadow-lg hover:shadow-black p-2 rounded"
+            >
+              <FaInstagram size={20} />
             </a>
-            <a href="https://linkedin.com" target="_blank" rel="noopener noreferrer" className="text-gray-800 hover:text-yellow-600 transition duration-300">
-              <FaLinkedin size={24} />
+            <a
+              href="https://linkedin.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-gray-800 hover:text-white hover:bg-yellow-600 transition duration-300 shadow-none hover:shadow-lg hover:shadow-black p-2 rounded"
+            >
+              <FaLinkedin size={20} />
             </a>
           </div>
         </div>

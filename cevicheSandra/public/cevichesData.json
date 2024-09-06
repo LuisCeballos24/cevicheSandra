@@ -2,7 +2,7 @@
     {
         "id": 1,
         "name": "Ceviche Tradicional Corvina",
-        "prices": { "7oz": 3.00, "16oz": 8.50, "24oz": 10.00, "medio galon": 25.00, "galon": 40.00 },
+        "prices": { "7oz": 3.00, "16oz": 8.00, "24oz": 12.00, "medio galon": 30.00, "galon": 60.00 },
         "image": "/corvinaTradicional.png",
         "description": "En los inicios de Ceviches y Cócteles Donde Sandra, Sandra descubrió el secreto para preparar el ceviche tradicional perfecto. Usando solo la corvina más fresca, seleccionada a mano cada mañana, Sandra combina ingredientes frescos y naturales para crear una receta que ha sido transmitida de generación en generación. El resultado es un ceviche con un sabor limpio y vibrante, lleno de la frescura del mar y la tradición culinaria que define nuestra casa. Beneficios: Rico en proteínas, bajo en grasa, y lleno de antioxidantes gracias a los ingredientes frescos y naturales."
     },
@@ -16,36 +16,44 @@
     {
         "id": 3,
         "name": "Ceviche Mixto",
-        "prices": { "7oz": 4.00, "16oz": 10.00, "24oz": 12.00, "medio galon": 35.00, "galon": 70.00 },
-        "image": "/mixtoTradicional.png",
+        "prices": { "7oz": 4.00, "16oz": 10.00, "24oz": 15.00, "medio galon": 35.00, "galon": 70.00 },
+        "image": {"mixtoTradicional1":"/cevicheMixto16oz.png","mixtoTradicional2":"/cevicheMixto16oz2.png"},
         "description": "El ceviche mixto es una de las especialidades más queridas de Sandra. Esta receta combina los sabores del camarón y la corvina en un equilibrio perfecto, aderezado con una mezcla secreta de jugos cítricos y especias. La pasión de Sandra por la calidad se refleja en cada ingrediente, garantizando una mezcla única de frescura y sabor que encanta a todos los que lo prueban. Beneficios: Combina los beneficios de los camarones y la corvina, proporcionando un plato completo y nutritivo, rico en proteínas y vitaminas."
     },
     {
         "id": 4,
         "name": "Ceviche Concha Negra",
-        "prices": { "7oz": 4.00, "16oz": 10.00, "24oz": 12.00, "medio galon": 35.00, "galon": 70.00 },
-        "image": "/conchaNegraTradicional.png",
+        "prices": { "7oz": 4.00, "16oz": 10.00, "24oz": 12.50, "medio galon": 35.00, "galon": 70.00 },
+        "image": {"conchaNegra":"/cevicheConchaNegra.png","conchaNegra2":"/conchaNegraTradicional.png"},
         "description": "La concha negra, un marisco exótico y apreciado, es el protagonista de este ceviche único. Sandra ha perfeccionado esta receta a lo largo de los años, eligiendo las conchas negras más frescas y añadiendo una mezcla de ingredientes que realzan su sabor natural. La textura tierna y el sabor robusto de las conchas negras crean una experiencia culinaria inigualable. Beneficios: Rico en minerales esenciales y vitaminas, y conocido por sus propiedades antioxidantes y antiinflamatorias."
     },
     {
         "id": 5,
         "name": "Cóctel Mixto",
-        "prices": { "7oz": 4.00, "16oz": 10.00, "24oz": 12.00, "medio galon": 40.00, "galon": 80.00 },
-        "image": "/mixtoCoctel.png",
+        "prices": { "7oz": 4.00, "16oz": 10.00, "24oz": 15.00, "medio galon": 40.00, "galon": 80.00 },
+        "image": {"mixtoCoctel":"/mixtoCoctel.png","mixtoCoctel2":"/coctelMixto16oz.png"},
         "description": "El cóctel mixto de Sandra es una celebración de los sabores del mar. Con una combinación de camarones y corvina en una salsa fresca y vibrante, este cóctel es perfecto para quienes buscan una opción refrescante y llena de sabor. La receta, que Sandra ha perfeccionado con el tiempo, destaca por su equilibrio y frescura, ofreciendo una experiencia de sabor única. Beneficios: Incluye una mezcla de mariscos ricos en proteínas y bajo en grasas, ideal para una dieta saludable y equilibrada."
     },
     {
         "id": 6,
         "name": "Cóctel Camarón",
-        "prices": { "7oz": 4.00, "16oz": 10.00, "24oz": 12.00, "medio galon": 40.00, "galon": 80.00 },
+        "prices": { "7oz": 4.00, "16oz": 10.00, "24oz": 15.00, "medio galon": 40.00, "galon": 80.00 },
         "image": "/coctelCamarones.png",
         "description": "Sandra creó el cóctel de camarón para resaltar la frescura y el sabor del camarón de la más alta calidad. El proceso de limpieza y preparación de los camarones es meticuloso, garantizando que cada bocado sea una delicia. La salsa especial combina perfectamente con los camarones, creando un cóctel que es tanto sabroso como satisfactorio. Beneficios: El camarón es bajo en calorías y rico en nutrientes, proporcionando una fuente excelente de proteínas y antioxidantes."
     },
     {
         "id": 7,
         "name": "Cóctel Corvina",
-        "prices": { "7oz": 3.00, "16oz": 7.50, "24oz": 10.00, "medio galon": 25.00, "galon": 40.00 },
+        "prices": { "7oz": 3.00, "16oz": 7.00, "24oz": 10.00, "medio galon": 25.00, "galon": 45.00 },
         "image": "/coctelTradicional.png",
         "description": "El cóctel de corvina es una de las recetas más tradicionales de Sandra, perfeccionada a lo largo de los años. Utiliza corvina fresca, que se combina con una mezcla especial de cítricos y especias para crear un cóctel que es tanto clásico como innovador. Este cóctel es ideal para quienes buscan una experiencia auténtica con un toque moderno. Beneficios: Rico en proteínas y bajo en grasa, es una opción saludable y deliciosa para cualquier comida."
+    },
+    {
+        "id": 8,
+        "name": "Cóctel Tropical",
+        "prices": { "7oz": 4.00, "16oz": 10.00, "24oz": 15.00, "medio galon": 35.00, "galon": 80.00 },
+        "image": "/coctelTropical.png",
+        "description": "El Cóctel Tropical es una creación refrescante y exótica que captura la esencia de los trópicos en cada sorbo. Preparado con una base de mariscos frescos y pescado blanco de calidad, este cóctel se eleva a otro nivel con la inclusión de ingredientes como kiwi dulce, coco rallado, mango jugoso, y un toque de piña madura. Todo se mezcla con una salsa especial de cítricos y un toque de jengibre, aportando un balance perfecto entre dulzura, acidez y frescura. Este cóctel no solo es delicioso, sino también una excelente fuente de antioxidantes y vitaminas, convirtiéndolo en una opción refrescante y saludable. Perfecto para los días calurosos o para quienes buscan una experiencia culinaria diferente y tropical."
     }
+    
 ]
