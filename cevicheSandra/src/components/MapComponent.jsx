@@ -60,7 +60,7 @@ const MapComponent = ({ selectedLocation, handleMapClick }) => {
   return (
     googleMapsApiKey && (
       <LoadScript googleMapsApiKey={googleMapsApiKey}>
-        <div className="map-container" style={{ height: '400px', width: '600px' }}>
+        <div className="map-container" style={{ height: '300px', width: '400px' }}>
           <GoogleMap
             mapContainerStyle={{ width: '100%', height: '100%' }}
             center={location}

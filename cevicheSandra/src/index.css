@@ -123,3 +123,13 @@ footer:hover {
   width: 100%;
   height: auto;
 }
+
+@media (max-width: 768px) {
+  .mb-4 {
+    margin-bottom: 1rem; /* Ajusta según sea necesario */
+  }
+
+  .w-full {
+    width: 100%; /* Asegúrate de que el ancho se ajuste en pantallas pequeñas */
+  }
+}

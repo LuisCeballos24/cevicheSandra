@@ -30,6 +30,8 @@ const calculateDistance = (lat1, lon1, lat2, lon2) => {
 
 // Función para encontrar la ubicación más cercana
 const findNearestLocation = (customerLocation) => {
+  if (!customerLocation) return null;
+
   let nearestLocation = null;
   let minDistance = Infinity;
 
@@ -53,6 +55,8 @@ const findNearestLocation = (customerLocation) => {
 
 // Función para calcular el costo de entrega
 const calculateDeliveryPrice = (customerLocation) => {
+  if (!customerLocation) return 0;
+
   const nearestLocation = findNearestLocation(customerLocation);
   const deliveryCostPerKm = 1.5; // Precio por kilómetro
 
@@ -80,6 +84,9 @@ const calculateTotalOrderPrice = (order) => {
 
 // Función para crear un enlace de Google Maps
 const createGoogleMapsLink = (latitude, longitude) => {
+  if (latitude === undefined || longitude === undefined) {
+    return 'Ubicación no disponible';
+  }
   return `https://www.google.com/maps?q=${latitude},${longitude}`;
 };
 
@@ -124,8 +131,15 @@ const OrderSender = async (order, customerDetails, customerLocation, email) => {
       }
     }
 
-    // Crear el enlace de Google Maps para la ubicación del cliente
-    const mapsLink = customerLocation ? createGoogleMapsLink(customerLocation.lat, customerLocation.lng) : '';
+    // Crear el enlace de Google Maps si hay ubicación del cliente
+    const mapsLink = customerLocation
+      ? createGoogleMapsLink(customerLocation.lat, customerLocation.lng)
+      : '';
+
+    // Mensaje de ubicación predeterminado si no hay ubicación del cliente
+    const locationMessage = customerLocation && mapsLink !== 'Ubicación no disponible'
+      ? `Ubicación del Cliente en Google Maps: [Ver Mapa](${mapsLink})`
+      : 'Recogerá en el local más cercano.';
 
     // Crear el cuerpo del correo electrónico
     const emailBody = `
@@ -144,7 +158,7 @@ const OrderSender = async (order, customerDetails, customerLocation, email) => {
 
       ${!isSafari() && driveLink ? `Recibirás un PDF con los detalles del pedido en el siguiente enlace: [Ver PDF](${driveLink})` : ''}
 
-      ${mapsLink ? `Ubicación del Cliente en Google Maps: [Ver Mapa](${mapsLink})` : ''}
+      ${locationMessage}
     
       ¡Gracias por tu compra!
     `;
@@ -176,7 +190,7 @@ const OrderSender = async (order, customerDetails, customerLocation, email) => {
 
       Total del Pedido: ${totalOrderPrice.toFixed(2)}
 
-      ${mapsLink ? `Ubicación del Cliente en Google Maps: ${mapsLink}` : ''}
+      ${customerLocation ? (mapsLink !== 'Ubicación no disponible' ? `Ubicación del Cliente en Google Maps: ${mapsLink}` : 'Recogerá en el local más cercano.') : 'Recogerá en el local más cercano.'}
 
       ¡Gracias por tu compra!
     `;
