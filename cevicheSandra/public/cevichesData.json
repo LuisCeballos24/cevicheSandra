@@ -19,11 +19,11 @@
         "id": 2,
         "name": "Ceviche Camarón",
         "prices": {
-            "7oz": 4.00,
-            "16oz": 10.00,
-            "24oz": 12.00,
-            "medio galon": 35.00,
-            "galon": 70.00
+            "7oz": 4.50,
+            "16oz": 11.00,
+            "24oz": 17.00,
+            "medio galon": 45.00,
+            "galon": 90.00
         },
         "image": {
             "cevicheCamaron": "/cevicheCamaron.png",
@@ -51,7 +51,7 @@
         "id": 4,
         "name": "Ceviche Concha Negra",
         "prices": {
-            "7oz": 4.00,
+            "7oz": 3.50,
             "16oz": 10.00,
             "24oz": 12.50,
             "medio galon": 35.00,
@@ -83,11 +83,11 @@
         "id": 6,
         "name": "Cóctel Camarón",
         "prices": {
-            "7oz": 4.00,
-            "16oz": 10.00,
-            "24oz": 15.00,
-            "medio galon": 40.00,
-            "galon": 80.00
+            "7oz": 4.50,
+            "16oz": 11.00,
+            "24oz": 17.00,
+            "medio galon": 45.00,
+            "galon": 90.00
         },
         "image": "/coctelCamarones.png",
         "description": "Sandra creó el cóctel de camarón para resaltar la frescura y el sabor del camarón de la más alta calidad. El proceso de limpieza y preparación de los camarones es meticuloso, garantizando que cada bocado sea una delicia. La salsa especial combina perfectamente con los camarones, creando un cóctel que es tanto sabroso como satisfactorio. Beneficios: El camarón es bajo en calorías y rico en nutrientes, proporcionando una fuente excelente de proteínas y antioxidantes."
@@ -128,7 +128,7 @@
         "id": 9,
         "name": "Ceviche Pulpo",
         "prices": {
-            "7oz": 4.00,
+            "7oz": 3.50,
             "16oz": 8.50,
             "24oz": 15.00,
             "medio galon": 35.00,
@@ -136,5 +136,93 @@
         },
         "image": "/cevichePulpo.png",
         "description": "El Ceviche de Pulpo es una deliciosa especialidad marina que ofrece una experiencia culinaria única llena de frescura y sabor. Este platillo se prepara con pulpo tierno y jugoso, marinado en una mezcla de jugos cítricos frescos, como limón y naranja, que resaltan su sabor natural y lo hacen aún más irresistible. Acompañado de crujientes trozos de cebolla roja, pimientos frescos, cilantro aromático y un toque de ají picante, este ceviche logra un equilibrio perfecto entre acidez, frescura y un ligero picante. Cada bocado es una explosión de sabores frescos del mar, enriquecidos con notas cítricas y un sutil toque de especias. Ideal para los amantes de los mariscos que buscan una opción ligera, saludable y llena de personalidad. Perfecto para disfrutar en un día soleado o como entrada en una cena especial."
+    },
+    {
+        "id": 10,
+        "name": "Ceviche Combinacion",
+        "prices": {
+            "7oz": 4.00,
+            "16oz": 10.00,
+            "24oz": 15.00,
+            "medio galon": 35.00,
+            "galon": 70.00
+        },
+        "image": "/cevicheCombinacion.png",
+        "description": "El Ceviche de combinacion es una deliciosa especialidad marina que ofrece una experiencia culinaria única llena de frescura y sabor. Este platillo se prepara con pulpo, camaron, corvina y concha negra todo fresco y jugoso, marinado en una mezcla de jugos cítricos frescos, como limón y naranja, que resaltan su sabor natural y lo hacen aún más irresistible. Acompañado de crujientes trozos de cebolla roja, pimientos frescos, cilantro aromático y un toque de ají picante, este ceviche logra un equilibrio perfecto entre acidez, frescura y un ligero picante. Cada bocado es una explosión de sabores frescos del mar, enriquecidos con notas cítricas y un sutil toque de especias. Ideal para los amantes de los mariscos que buscan una opción ligera, saludable y llena de personalidad. Perfecto para disfrutar en un día soleado o como entrada en una cena especial."
+    },
+    {
+        "id": 11,
+        "name": "Cóctel PERSONALIZADO",
+        "prices": {
+            "7oz": 5.00,
+            "16oz": 11.00,
+            "24oz": 17.00,
+            "medio galon": 45.00,
+            "galon": 90.00
+        },
+        "image": "/coctelPersonalizado.png",
+        "description": "El Ceviche de  coctel Hawai de corvina es una deliciosa especialidad que puede personalizar el cliente con las frutas que desee en su coctel"
+    },
+    {
+        "id": 12,
+        "name": "Cóctel Hawai corvina",
+        "prices": {
+            "7oz": 3.00,
+            "16oz": 8.50,
+            "24oz": 12.00,
+            "medio galon": 35.00,
+            "galon": 70.00
+        },
+        "image": "/cevicheHawaiCorvina.png",
+        "description": "El Ceviche de  coctel Hawai de corvina es una deliciosa especialidad que puede personalizar el cliente con las frutas que desee en su coctel"
+    },
+    {
+        "id": 13,
+        "name": "Cóctel Hawai camaron o pulpo",
+        "prices": {
+            "7oz": 4.50,
+            "16oz": 11.00,
+            "24oz": 17.00,
+            "medio galon": 45.00,
+            "galon": 90.00
+        },
+        "image": "/cevicheHawaiCamaronPulpo.png",
+        "description": "El Ceviche de  coctel Hawai camaron o pulpo es una deliciosa especialidad que puede personalizar el cliente con las frutas que desee en su coctel"
+    },
+    {
+        "id": 14,
+        "name": "Sodas",
+        "prices": {
+            "1": 0.25
+        },
+        "image": "/Sodas.PNG",
+        "description": "Sodas blanca o cocacola"
+    },
+    {
+        "id": 15,
+        "name": "Galletas de Soda",
+        "prices": {
+            "1": 0.25
+        },
+        "image": "/galletas.PNG",
+        "description": "galletas de sal de soda"
+    },
+    {
+        "id": 16,
+        "name": "pastillas",
+        "prices": {
+            "1": 0.10
+        },
+        "image": "/pastillas.PNG",
+        "description": "pastillas dulces"
+    },
+    {
+        "id": 17,
+        "name": "platanitos",
+        "prices": {
+            "1": 0.50
+        },
+        "image": "/platanitos.PNG",
+        "description": "platanitos frescos"
     }
 ]

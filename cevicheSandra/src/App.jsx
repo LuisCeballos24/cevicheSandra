@@ -9,6 +9,7 @@ import Footer from './components/Footer';
 import Contacto from './components/Contacto';
 import About from './components/About';
 import Menu from './components/Menu';
+import Venta from './components/CevicheVenta';
 import CevicheDetail from './components/CevicheDetail';
 
 const App = () => {
@@ -52,6 +53,7 @@ const App = () => {
         <Route path="/contacto" element={<Contacto />} />
         <Route path="/nosotros" element={<About />} />
         <Route path="/menu" element={<Menu />} />
+        <Route path="/venta" element={<Venta />} />
         <Route path="/ceviche/:id" element={<CevicheDetail />} />
       </Routes>
       <Footer />
