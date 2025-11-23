@@ -1,8 +1,5 @@
 {
   "projects": {
-    "default": "propios-c6d5c",
-    "sandra": "propios-c6d5c"
-  },
-  "targets": {},
-  "etags": {}
+    "default": "propios-ba684"
+  }
 }
