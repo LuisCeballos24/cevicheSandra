@@ -193,7 +193,7 @@
         "id": 14,
         "name": "Sodas",
         "prices": {
-            "1": 0.25
+            "1": 1.25
         },
         "image": "/Sodas.PNG",
         "description": "Sodas blanca o cocacola"
