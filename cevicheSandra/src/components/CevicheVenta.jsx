@@ -3,608 +3,511 @@ import { db } from './FirebaseConfig';
 import { collection, addDoc, query, where, getDocs, Timestamp } from 'firebase/firestore';
 import Slider from 'react-slick';
 import InventoryTextForm from './InventoryTextForm';
+import { FaTrash, FaSignOutAlt, FaCashRegister, FaCheck, FaWhatsapp, FaTag } from 'react-icons/fa';
 
 const CevicheVenta = () => {
-  const [cevichesData, setCevichesData] = useState([]);
-  // El estado 'order' ahora contendrá el carrito de compras.
-  const [order, setOrder] = useState([]);
-  const [selectedSizes, setSelectedSizes] = useState({});
-  const [quantities, setQuantities] = useState({});
-  const [errors, setErrors] = useState(null);
-  const [user, setUser] = useState(null);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [showSuccessPopup, setShowSuccessPopup] = useState(false);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [modalContent, setModalContent] = useState({});
-  const [loginForm, setLoginForm] = useState({ name: '', password: '' });
-  const [isDelivery, setIsDelivery] = useState(false);
-  const [isYappy, setIsYappy] = useState(false);
-  const [canSendOrder, setCanSendOrder] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [showInventoryModal, setShowInventoryModal] = useState(false);
-  const initialCevicheLevels = {
-    galonLleno: false,
-    galonMedio: false,
-    galonMedioLleno: false,
-    galonUnCuarto: false,
-    noHay: false,
-  };
-  const [showCloseRegisterModal, setShowCloseRegisterModal] = useState(false);
-  const [dailyTotals, setDailyTotals] = useState({ efectivo: 0, yappy: 0 });
-  const [closingRegisterReport, setClosingRegisterReport] = useState({
-    dinero: '',
-  });
-  const [closingModalError, setClosingModalError] = useState(null);
+  // --- ESTADOS ---
+  const [cevichesData, setCevichesData] = useState([]);
+  const [order, setOrder] = useState([]); 
+  const [selectedSizes, setSelectedSizes] = useState({});
+  const [quantities, setQuantities] = useState({});
+  
+  // Promociones
+  const [promoCorvina, setPromoCorvina] = useState(false);
+  const [promo16oz, setPromo16oz] = useState(false);
 
-  const cevicheKeys = [
-    'coctelCorvina',
-    'cevicheTradicionalCorvina',
-    'cevicheCamaron',
-    'cevicheMixto',
-    'cevicheConchaNegra',
-    'coctelCorvina',
-    'cevichePulpo',
-    'cevicheCombinacion'
-  ];
+  // Usuario y Sesión
+  const [user, setUser] = useState(null);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [loginForm, setLoginForm] = useState({ name: '', password: '' });
+  
+  // UI y Modales
+  const [errors, setErrors] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [showSuccessPopup, setShowSuccessPopup] = useState(false);
+  const [showInventoryModal, setShowInventoryModal] = useState(false);
+  const [showCloseRegisterModal, setShowCloseRegisterModal] = useState(false);
+  
+  // Opciones de Pedido
+  const [isDelivery, setIsDelivery] = useState(false);
+  const [isYappy, setIsYappy] = useState(false);
 
-  const initialInventoryDailyReport = {
-    nachosGrande: '',
-    nachosPequeno: '',
-    vasos7oz: '',
-    cucharas: false,
-    bolsitas5x10: false,
-    sodas: false,
-    platanitos: false,
-    envases16oz: '',
-    envases24oz: '',
-    uvas: false,
-    kiwi: false,
-    coco: false,
-    pina: false,
-    nachosSinPreparar: false,
-  };
+  // Inventario y Cierre
+  const [inventoryDailyReport, setInventoryDailyReport] = useState({});
+  const [inventoryReportSent, setInventoryReportSent] = useState(false);
+  const [inventoryModalError, setInventoryModalError] = useState(null);
+  const [dailyTotals, setDailyTotals] = useState({ efectivo: 0, yappy: 0 });
+  const [closingRegisterReport, setClosingRegisterReport] = useState({ dinero: '' });
+  const [closingModalError, setClosingModalError] = useState(null);
 
-  cevicheKeys.forEach(key => {
-    initialInventoryDailyReport[key] = { ...initialCevicheLevels };
-  });
+  const settings = { dots: true, infinite: true, speed: 500, slidesToShow: 1, slidesToScroll: 1 };
 
-  const [inventoryDailyReport, setInventoryDailyReport] = useState(initialInventoryDailyReport);
-  const [inventoryReportSent, setInventoryReportSent] = useState(false);
-  const [inventoryModalError, setInventoryModalError] = useState(null);
+  const validUsers = {
+    cevicheSandra: 'Ceviche.sandra@24',
+    cevicheAltos: 'Altos.ceviche@24',
+    cevichePraderas: 'Praderas.ceviche@24',
+  };
 
-  const settings = {
-    dots: true,
-    infinite: true,
-    speed: 500,
-    slidesToShow: 1,
-    slidesToScroll: 1,
-  };
+  // --- EFECTOS ---
+  useEffect(() => {
+    const fetchCeviches = async () => {
+      try {
+        const response = await fetch('/cevichesData.json');
+        const data = await response.json();
+        setCevichesData(data);
+        
+        const initialSizes = {};
+        const initialQts = {};
+        const initialReport = {
+            nachosGrande: '', nachosPequeno: '', vasos7oz: '', cucharas: false, bolsitas5x10: false,
+            sodas: false, platanitos: false, envases16oz: '', envases24oz: '', uvas: false,
+            kiwi: false, coco: false, pina: false, nachosSinPreparar: false,
+        };
 
-  useEffect(() => {
-    const fetchCeviches = async () => {
-      try {
-        const response = await fetch('/cevichesData.json');
-        const data = await response.json();
-        setCevichesData(data);
-        setSelectedSizes(data.reduce((acc, ceviche) => ({ ...acc, [ceviche.id]: '' }), {}));
-        setQuantities(data.reduce((acc, ceviche) => ({ ...acc, [ceviche.id]: 1 }), {}));
-      } catch (error) {
-        console.error('Error fetching ceviches:', error);
-      }
-    };
-    fetchCeviches();
-  }, []);
+        data.forEach(c => {
+            initialSizes[c.id] = '';
+            initialQts[c.id] = 1;
+            initialReport[c.name] = { galonLleno: false, galonMedio: false, galonMedioLleno: false, galonUnCuarto: false, noHay: false };
+        });
 
-  useEffect(() => {
-    const hasValidSelection = order.length > 0;
-    setCanSendOrder(hasValidSelection);
-  }, [order]);
+        setSelectedSizes(initialSizes);
+        setQuantities(initialQts);
+        setInventoryDailyReport(initialReport);
 
-  useEffect(() => {
-    const fetchDailySales = async () => {
-      if (showCloseRegisterModal && user?.name) {
-        const today = new Date();
-        const startOfDay = Timestamp.fromDate(new Date(today.getFullYear(), today.getMonth(), today.getDate(), 0, 0, 0));
-        const endOfDay = Timestamp.fromDate(new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59, 999));
-        try {
-          const q = query(
-            collection(db, "orders"),
-            where("timestamp", ">=", startOfDay),
-            where("timestamp", "<=", endOfDay)
-          );
-          const querySnapshot = await getDocs(q);
-          let totalEfectivo = 0;
-          let totalYappy = 0;
-          querySnapshot.forEach((doc) => {
-            const order = doc.data();
-            if (order.user !== user.name) return;
-            const orderTotal = parseFloat(order.total) || 0;
-            if (order.paymentMethod === "Yappy") {
-              totalYappy += orderTotal;
-            } else {
-              totalEfectivo += orderTotal;
-            }
-          });
-          setDailyTotals({ efectivo: totalEfectivo, yappy: totalYappy });
-          setClosingRegisterReport((prev) => ({
-            ...prev,
-            dinero: totalEfectivo.toFixed(2),
-          }));
-        } catch (error) {
-          console.error("Error fetching daily sales:", error);
-        }
-      }
-    };
-    fetchDailySales();
-  }, [showCloseRegisterModal, user?.name]);
+      } catch (error) {
+        console.error('Error fetching ceviches:', error);
+      }
+    };
+    fetchCeviches();
+  }, []);
+
+  useEffect(() => {
+    const checkSessionAndInventory = async () => {
+      const session = localStorage.getItem('isLoggedIn');
+      const storedUserName = localStorage.getItem('userName');
+      const todayDateString = new Date().toDateString();
+
+      if (session === 'true' && storedUserName) {
+        setUser({ name: storedUserName });
+        setIsLoggedIn(true);
+
+        try {
+          const q = query(
+            collection(db, 'daily_inventory_reports'),
+            where('user', '==', storedUserName),
+            where('date', '==', todayDateString)
+          );
+          const querySnapshot = await getDocs(q);
+          if (!querySnapshot.empty) {
+            setInventoryReportSent(true);
+            setShowInventoryModal(false);
+          } else {
+            setInventoryReportSent(false);
+            setShowInventoryModal(true);
+          }
+        } catch (error) {
+          console.error("Error verificando inventario:", error);
+          setShowInventoryModal(true); 
+        }
+      }
+    };
+    checkSessionAndInventory();
+  }, []);
+
+  useEffect(() => {
+    const fetchDailySales = async () => {
+      if (showCloseRegisterModal && user?.name) {
+        const today = new Date();
+        const startOfDay = Timestamp.fromDate(new Date(today.getFullYear(), today.getMonth(), today.getDate(), 0, 0, 0));
+        const endOfDay = Timestamp.fromDate(new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59, 999));
+        
+        try {
+          const q = query(
+            collection(db, "orders"),
+            where("timestamp", ">=", startOfDay),
+            where("timestamp", "<=", endOfDay)
+          );
+          const querySnapshot = await getDocs(q);
+          let totalEfectivo = 0;
+          let totalYappy = 0;
+          
+          querySnapshot.forEach((doc) => {
+            const orderData = doc.data();
+            if (orderData.user !== user.name) return;
+            
+            const monto = parseFloat(orderData.total) || 0;
+            if (orderData.paymentMethod === "Yappy") {
+              totalYappy += monto;
+            } else {
+              totalEfectivo += monto;
+            }
+          });
+          
+          setDailyTotals({ efectivo: totalEfectivo, yappy: totalYappy });
+          setClosingRegisterReport(prev => ({ ...prev, dinero: totalEfectivo.toFixed(2) }));
+          
+        } catch (error) {
+          console.error("Error fetching sales:", error);
+        }
+      }
+    };
+    fetchDailySales();
+  }, [showCloseRegisterModal, user?.name]);
 
 
-  const handleOpenCloseRegisterModal = () => {
-    setClosingModalError(null);
-    setShowCloseRegisterModal(true);
-  };
+  // --- HANDLERS ---
 
-  const validUsers = {
-    cevicheSandra: 'Ceviche.sandra@24',
-    cevicheAltos: 'Altos.ceviche@24',
-    cevichePraderas: 'Praderas.ceviche@24',
-  };
+  const handleLogin = () => {
+    const { name, password } = loginForm;
+    if (validUsers[name] && validUsers[name] === password) {
+      localStorage.setItem('isLoggedIn', 'true');
+      localStorage.setItem('userName', name);
+      setUser({ name });
+      setIsLoggedIn(true);
+      setErrors(null);
+    } else {
+      setErrors('Credenciales incorrectas.');
+    }
+  };
 
-  const handleLogin = () => {
-    const { name, password } = loginForm;
-    if (validUsers[name] && validUsers[name] === password) {
-      localStorage.setItem('isLoggedIn', 'true');
-      localStorage.setItem('userName', name);
-      setUser({ name });
-      setIsLoggedIn(true);
-      setErrors(null);
-    } else {
-      setErrors('Credenciales incorrectas.');
-    }
-  };
+  const handleLogout = () => {
+    localStorage.removeItem('isLoggedIn');
+    localStorage.removeItem('userName');
+    setIsLoggedIn(false);
+    setUser(null);
+  };
 
-  useEffect(() => {
-    const session = localStorage.getItem('isLoggedIn');
-    const storedUserName = localStorage.getItem('userName');
-    const lastInventoryDate = localStorage.getItem('lastInventoryDate');
-    const today = new Date().toDateString();
+  // --- LÓGICA PRINCIPAL DE PRECIOS Y PROMOCIONES ---
+  const handleAddToOrder = (cevicheId, size, quantity) => {
+    if (!size || quantity <= 0) {
+      setErrors('Selecciona un tamaño y cantidad válidos.');
+      return;
+    }
+    const ceviche = cevichesData.find(c => c.id === cevicheId);
+    let unitPrice = ceviche.prices[size];
+    let appliedPromos = [];
 
-    if (session === 'true' && storedUserName) {
-      setUser({ name: storedUserName });
-      setIsLoggedIn(true);
-      if (lastInventoryDate !== today) {
-        setShowInventoryModal(true);
-        setInventoryReportSent(false);
-      } else {
-        setInventoryReportSent(true);
-        setShowInventoryModal(false);
-      }
-    } else {
-      setShowInventoryModal(false);
-      setInventoryReportSent(false);
-    }
-  }, [isLoggedIn]);
+    // 1. Promoción Coctel de Corvina ($5.50 en vez de $7)
+    // Asumimos que aplica si el ID es 'coctelCorvina' y el precio base era 7.
+    if (promoCorvina && cevicheId === 'coctelCorvina' && unitPrice === 7) {
+        unitPrice = 5.50;
+        appliedPromos.push("Promo Corvina");
+    }
 
-  const handleAddToOrder = (cevicheId, size, quantity) => {
-    if (!size || quantity <= 0) {
-      setErrors('Selecciona un tamaño y cantidad válidos.');
-      return;
-    }
-    const ceviche = cevichesData.find(c => c.id === cevicheId);
-    const price = ceviche.prices[size];
-    const newOrderItem = {
-      id: `${cevicheId}-${size}-${Date.now()}`, // ID único para cada item del pedido
-      cevicheId,
-      size,
-      quantity: parseInt(quantity, 10),
-      price,
-      image: ceviche.image,
-      cevicheName: ceviche.name,
-    };
-    setOrder(prev => [...prev, newOrderItem]);
-    // Limpiar los estados para que el usuario pueda agregar otro item.
-    setSelectedSizes(prev => ({ ...prev, [cevicheId]: '' }));
-    setQuantities(prev => ({ ...prev, [cevicheId]: 1 }));
-    setErrors(null);
-  };
+    // 2. Promoción Pinta 16oz ($1 menos)
+    // Se aplica a CUALQUIER ceviche que sea de 16oz
+    if (promo16oz && size === '16oz') {
+        unitPrice = unitPrice - 1;
+        appliedPromos.push("-1$ 16oz");
+    }
 
-  const handleRemoveFromOrder = (itemId) => {
-    setOrder(prev => prev.filter(item => item.id !== itemId));
-  };
+    const newItem = {
+      id: `${cevicheId}-${size}-${Date.now()}`,
+      cevicheId,
+      cevicheName: ceviche.name,
+      size,
+      quantity: parseInt(quantity),
+      price: unitPrice, // Precio unitario final calculado
+      subtotal: unitPrice * parseInt(quantity),
+      promos: appliedPromos.join(', ')
+    };
 
-  const handleSendInventoryReport = async () => {
-    setInventoryModalError(null);
-    const numberFields = ['nachosGrande', 'nachosPequeno', 'vasos7oz', 'envases16oz', 'envases24oz'];
-    const missingNumberFields = numberFields.some(key => {
-      const value = inventoryDailyReport[key];
-      return value === '' || isNaN(parseInt(value)) || parseInt(value) < 0;
-    });
-    if (missingNumberFields) {
-      setInventoryModalError('Por favor, ingresa una cantidad válida (número) para todos los campos de cantidad.');
-      return;
-    }
-    const missingCevicheSelections = cevicheKeys.some(key => {
-      const cevicheState = inventoryDailyReport[key];
-      return !cevicheState.galonLleno && !cevicheState.galonMedioLleno && !cevicheState.galonMedio && !cevicheState.galonUnCuarto && !cevicheState.noHay;
-    });
-    if (missingCevicheSelections) {
-      setInventoryModalError('Por favor, selecciona el nivel de inventario para cada tipo de ceviche.');
-      return;
-    }
-    const userName = user?.name || 'Desconocido';
-    const reportDate = new Date().toDateString();
-    let whatsappInventoryMessage = `*¡Reporte de Inventario Diario!*\n`;
-    whatsappInventoryMessage += `*Usuario:* ${userName}\n`;
-    whatsappInventoryMessage += `*Fecha:* ${new Date().toLocaleDateString('es-PA', { timeZone: 'America/Panama' })}\n\n`;
-    const displayNames = {
-      nachosGrande: 'Nachos Grandes', nachosPequeno: 'Nachos Pequeños', vasos7oz: 'Vasos 7oz', cucharas: 'Cucharas',
-      sodas: "Sodas", platanitos: "platanitos", bolsitas5x10: 'Bolsitas 5x10', envases16oz: 'Envases 16oz', envases24oz: 'Envases 24oz',
-      uvas: 'Uvas', kiwi: 'Kiwi', coco: 'Coco', pina: 'Piña', nachosSinPreparar: 'Nachos sin preparar',
-      cevicheTradicionalCorvina: 'Ceviche Tradicional Corvina', cevicheCamaron: 'Ceviche Camarón', cevicheMixto: 'Ceviche Mixto',
-      cevicheConchaNegra: 'Ceviche Concha Negra', coctelMixto: 'Cóctel Mixto', coctelCamaron: 'Cóctel Camarón', coctelCorvina: 'Cóctel Corvina',
-      coctelTropical: 'Cóctel Tropical', cevichePulpo: 'Ceviche Pulpo', cevicheCombinacion: 'Ceviche Combinación', coctelPersonalizado: 'Cóctel Personalizado',
-      coctelHawaiCorvina: 'Cóctel Hawai Corvina', coctelHawaiCamaronPulpo: 'Cóctel Hawai Camarón/Pulpo',
-    };
-    for (const itemKey in inventoryDailyReport) {
-      const value = inventoryDailyReport[itemKey];
-      const displayName = displayNames[itemKey] || itemKey;
-      if (typeof value === 'boolean') {
-        whatsappInventoryMessage += `*${displayName}:* ${value ? 'No hay' : 'Si hay'}\n`;
-      } else if (typeof value === 'object' && value !== null) {
-        let levelText = 'N/A';
-        if (value.galonLleno) {
-          levelText = 'Galón Lleno';
-        } else if (value.galonMedioLleno) {
-          levelText = 'Casi Galon Lleno';
-        } else if (value.galonMedio) {
-          levelText = 'Medio Galón';
-        } else if (value.galonUnCuarto) {
-          levelText = 'Un Cuarto de Galón';
-        } else if (value.noHay) {
-          levelText = 'No hay';
-        }
-        whatsappInventoryMessage += `*${displayName}:* ${levelText}\n`;
-      } else {
-        whatsappInventoryMessage += `*${displayName}:* ${value}\n`;
-      }
-    }
-    const whatsappLink = `https://wa.me/50767961550?text=${encodeURIComponent(whatsappInventoryMessage)}`;
-    try {
-      await addDoc(collection(db, 'daily_inventory_reports'), {
-        user: userName,
-        date: reportDate,
-        inventory: inventoryDailyReport,
-        timestamp: new Date()
-      });
-      window.open(whatsappLink, '_blank');
-      localStorage.setItem('lastInventoryDate', new Date().toDateString());
-      setInventoryReportSent(true);
-      setShowInventoryModal(false);
-      setErrors(null);
-      setInventoryModalError(null);
-      setInventoryDailyReport(initialInventoryDailyReport);
-    } catch (e) {
-      console.error("Error al enviar el reporte de inventario:", e);
-      setInventoryModalError(`Error al enviar el reporte: ${e.message}`);
-    }
-  };
-  const handleSendClosingReport = async () => {
-    setClosingModalError(null);
-    const dineroEnCaja = parseFloat(closingRegisterReport.dinero);
-    if (isNaN(dineroEnCaja) || dineroEnCaja < 0) {
-      setClosingModalError('Por favor, ingresa una cantidad válida de dinero en efectivo.');
-      return;
-    }
-    const userName = user?.name || 'Desconocido';
-    let whatsappClosingMessage = `*¡Reporte de Cierre de Caja!* \n`;
-    whatsappClosingMessage += `*Usuario:* ${userName}\n`;
-    whatsappClosingMessage += `*Fecha:* ${new Date().toLocaleDateString('es-PA', { timeZone: 'America/Panama' })}\n\n`;
-    whatsappClosingMessage += `*Total Ventas Efectivo (Sistema):* $${dailyTotals.efectivo.toFixed(2)}\n`;
-    whatsappClosingMessage += `*Dinero en Caja (Reportado):* $${dineroEnCaja.toFixed(2)}\n`;
-    const diferencia = dineroEnCaja - dailyTotals.efectivo;
-    whatsappClosingMessage += `*Diferencia Efectivo:* $${diferencia.toFixed(2)}\n`;
-    whatsappClosingMessage += `\n*Inventario Final:*\n`;
-    const displayNames = {
-      nachosGrande: 'Nachos Grandes', nachosPequeno: 'Nachos Pequeños', vasos7oz: 'Vasos 7oz', cucharas: 'Cucharas',
-      sodas: "Sodas", platanitos: "Platanitos", bolsitas5x10: 'Bolsitas 5x10', envases16oz: 'Envases 16oz', envases24oz: 'Envases 24oz',
-      uvas: 'Uvas', kiwi: 'Kiwi', coco: 'Coco', pina: 'Piña', nachosSinPreparar: 'Nachos sin preparar',
-      cevicheTradicionalCorvina: 'Ceviche Tradicional Corvina', cevicheCamaron: 'Ceviche Camarón', cevicheMixto: 'Ceviche Mixto',
-      cevicheConchaNegra: 'Ceviche Concha Negra', coctelMixto: 'Cóctel Mixto', coctelCamaron: 'Cóctel Camarón', coctelCorvina: 'Cóctel Corvina',
-      coctelTropical: 'Cóctel Tropical', cevichePulpo: 'Ceviche Pulpo', cevicheCombinacion: 'Ceviche Combinación', coctelPersonalizado: 'Cóctel PERSONALIZADO',
-      coctelHawaiCorvina: 'Cóctel Hawai Corvina', coctelHawaiCamaronPulpo: 'Cóctel Hawai Camarón/Pulpo',
-    };
-    const cevicheKeys = [
-      'cevicheTradicionalCorvina', 'cevicheCamaron', 'cevicheMixto', 'cevicheConchaNegra',
-      'coctelMixto', 'coctelCamaron', 'coctelCorvina', 'coctelTropical', 'cevichePulpo',
-      'cevicheCombinacion', 'coctelPersonalizado', 'coctelHawaiCorvina', 'coctelHawaiCamaronPulpo',
-    ];
-    for (const itemKey in inventoryDailyReport) {
-      const value = inventoryDailyReport[itemKey];
-      const displayName = displayNames[itemKey] || itemKey;
-      if (typeof value === 'boolean') {
-        whatsappClosingMessage += `*${displayName}:* ${value ? 'No hay' : 'Sí hay'}\n`;
-      } else if (typeof value === 'object' && value !== null && cevicheKeys.includes(itemKey)) {
-        let levelText = 'N/A';
-        if (value.galonLleno) { levelText = 'Galón Lleno'; }
-        else if (value.casiGalonLleno) { levelText = 'Casi Galón Lleno'; }
-        else if (value.galonMedio) { levelText = 'Medio Galón'; }
-        else if (value.galonUnCuarto) { levelText = 'Un Cuarto de Galón'; }
-        else if (value.noHay) { levelText = 'No hay'; }
-        whatsappClosingMessage += `*${displayName}:* ${levelText}\n`;
-      } else if (!cevicheKeys.includes(itemKey)) {
-        whatsappClosingMessage += `*${displayName}:* ${value}\n`;
-      }
-    }
-    const whatsappLink = `https://wa.me/50767961550?text=${encodeURIComponent(whatsappClosingMessage)}`;
-    try {
-      await addDoc(collection(db, 'daily_closing_reports'), {
-        user: userName,
-        date: new Date().toDateString(),
-        cashReported: dineroEnCaja,
-        systemCashSales: dailyTotals.efectivo,
-        systemYappySales: dailyTotals.yappy,
-        cashDifference: diferencia,
-        finalInventory: inventoryDailyReport,
-        timestamp: new Date(),
-      });
-      window.open(whatsappLink, '_blank');
-      setShowCloseRegisterModal(false);
-      setClosingModalError(null);
-    } catch (e) {
-      console.error("Error al enviar el reporte de cierre de caja:", e);
-      setClosingModalError(`Error al enviar el reporte de cierre: ${e.message}`);
-    }
-  };
-  useEffect(() => {
-    const checkInventoryReport = async () => {
-      const session = localStorage.getItem('isLoggedIn');
-      const storedUserName = localStorage.getItem('userName');
-      const today = new Date();
-      const todayDateString = today.toDateString();
-      if (session === 'true' && storedUserName) {
-        if (!user || user.name !== storedUserName) {
-          setUser({ name: storedUserName });
-        }
-        setIsLoggedIn(true);
-        try {
-          const inventoryQuery = query(
-            collection(db, 'daily_inventory_reports'),
-            where('user', '==', storedUserName),
-            where('date', '==', todayDateString)
-          );
-          const querySnapshot = await getDocs(inventoryQuery);
-          if (querySnapshot.empty) {
-            setInventoryReportSent(false);
-            setShowInventoryModal(true);
-          } else {
-            querySnapshot.forEach(doc => {});
-            setInventoryReportSent(true);
-            setShowInventoryModal(false);
-          }
-        } catch (error) {
-          console.error("Error al verificar el reporte de inventario diario en Firestore:", error);
-          setInventoryReportSent(false);
-          setShowInventoryModal(true);
-        }
-      } else {
-        setIsLoggedIn(false);
-        setUser(null);
-        setInventoryReportSent(false);
-        setShowInventoryModal(false);
-      }
-    };
-    checkInventoryReport();
-  }, [isLoggedIn, user?.name]);
+    setOrder(prev => [...prev, newItem]);
+    
+    // Reset inputs locales
+    setSelectedSizes(prev => ({ ...prev, [cevicheId]: '' }));
+    setQuantities(prev => ({ ...prev, [cevicheId]: 1 }));
+    setErrors(null);
+  };
 
-  const handleSendOrder = async () => {
-    if (order.length === 0) {
-      setErrors('El carrito está vacío. Por favor, agrega al menos un ceviche.');
-      return;
-    }
-    setIsLoading(true);
-    const deliveryText = isDelivery ? 'Sí' : 'No';
-    const yappyText = isYappy ? 'Sí' : 'No';
-    const userName = user?.name || 'Desconocido';
-    const paymentMethod = isYappy ? 'Yappy' : 'Efectivo';
-    const total = order.reduce((sum, item) => sum + item.price * item.quantity, 0);
-    const orderMessage = order.map(item => ` ${item.quantity}x ${item.size} ${item.cevicheName} - $${(item.price * item.quantity).toFixed(2)}`).join('\n');
-    const whatsappMessage = `*¡Pedido de Ceviche!*\n*Usuario:* ${userName}\n\n*Pedido:*\n${orderMessage}\n\n*Total del pedido:* $${total.toFixed(2)}\n\n*Tipo de entrega:* ${deliveryText}\n*¿Pago por Yappy?:* ${yappyText}`;
-    const whatsappLink = `https://wa.me/50767961550?text=${encodeURIComponent(whatsappMessage)}`;
-    try {
-      await addDoc(collection(db, 'orders'), {
-        user: user?.name || 'Desconocido',
-        items: order,
-        yappy: isYappy,
-        total: total,
-        timestamp: new Date(),
-        paymentMethod: paymentMethod
-      });
-      window.open(whatsappLink, '_blank');
-      setTimeout(() => {
-        setIsLoading(false);
-        setShowSuccessPopup(true);
-      }, 2000);
-      setOrder([]);
-      setSelectedSizes(cevichesData.reduce((acc, c) => ({ ...acc, [c.id]: '' }), {}));
-      setQuantities(cevichesData.reduce((acc, c) => ({ ...acc, [c.id]: 1 }), {}));
-      setIsDelivery(false);
-      setIsYappy(false);
-      setErrors(null);
-    } catch (e) {
-      setErrors(`Error al enviar el pedido: ${e.message}`);
-      setIsLoading(false);
-    }
-  };
-  
-  const handleSizeChange = (id, size) => {
-    setSelectedSizes(prev => ({ ...prev, [id]: size }));
-  };
-  const handleQuantityChange = (id, quantity) => {
-    setQuantities(prev => ({ ...prev, [id]: quantity }));
-  };
-  if (isLoggedIn && showInventoryModal && !inventoryReportSent) {
-    return (
-      <InventoryTextForm
-        inventoryDailyReport={inventoryDailyReport}
-        setInventoryDailyReport={setInventoryDailyReport}
-        onSubmit={handleSendInventoryReport}
-        error={inventoryModalError}
-      />
-    );
-  }
-  if (showCloseRegisterModal) {
-    return (
-      <InventoryTextForm
-        inventoryDailyReport={inventoryDailyReport}
-        setInventoryDailyReport={setInventoryDailyReport}
-        onSubmit={handleSendClosingReport}
-        error={closingModalError}
-        isClosingReport={true}
-        dailyTotals={dailyTotals}
-        closingRegisterReport={closingRegisterReport}
-        setClosingRegisterReport={setClosingRegisterReport}
-      />
-    );
-  }
-  if (!isLoggedIn) {
-    return (
-      <div className="h-screen flex items-center justify-center bg-orange-100">
-        <div className="bg-white p-6 rounded-xl shadow-md w-full max-w-sm">
-          <h2 className="text-xl font-bold mb-4 text-center text-orange-600">Iniciar Sesión</h2>
-          <input
-            type="text"
-            placeholder="Usuario"
-            className="w-full mb-2 p-2 border rounded-lg"
-            value={loginForm.name}
-            onChange={e => setLoginForm({ ...loginForm, name: e.target.value })}
-          />
-          <input
-            type="password"
-            placeholder="Contraseña"
-            className="w-full mb-4 p-2 border rounded-lg"
-            value={loginForm.password}
-            onChange={e => setLoginForm({ ...loginForm, password: e.target.value })}
-          />
-          {errors && <p className="text-red-500 text-sm text-center mb-2">{errors}</p>}
-          <button
-            onClick={handleLogin}
-            className="bg-orange-500 text-white px-4 py-2 rounded-xl w-full hover:bg-orange-600"
-          >
-            Entrar
-          </button>
-        </div>
-      </div>
-    );
-  }
+  const handleRemoveFromOrder = (itemId) => {
+    setOrder(prev => prev.filter(item => item.id !== itemId));
+  };
 
-  return (
-    <div className="max-w-3xl mx-auto p-4">
-      <h2 className="text-lg font-semibold mb-4 text-right text-gray-600">
-        Usuario: <span className="text-orange-600">{user?.name}</span>
-      </h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {cevichesData.map((ceviche) => (
-          <div key={ceviche.id} className="bg-red-200 bg-opacity-50 p-6 rounded-lg flex flex-col md:flex-row items-start">
-            <div className="w-full mb-4 sm:mb-0 sm:w-1/2 sm:mr-4">
-              {typeof ceviche.image === 'string' ? (
-                <img
-                  src={ceviche.image}
-                  alt={`${ceviche.name} image`}
-                  className="rounded-lg object-cover w-full h-auto"
-                />
-              ) : (
-                <Slider {...settings}>
-                  {Object.values(ceviche.image).map((imgSrc, index) => (
-                    <div key={index} className="w-full">
-                      <img
-                        src={imgSrc}
-                        alt={`${ceviche.name} image ${index + 1}`}
-                        className="rounded-lg object-cover w-full h-auto"
-                      />
-                    </div>
-                  ))}
-                </Slider>
-              )}
-            </div>
-            <div className="flex-1">
-              <div className="mb-4">
-                <h2 className="text-lg font-semibold mb-2">{ceviche.name}</h2>
-                <label htmlFor={`size-${ceviche.id}`} className="block text-lg font-medium mb-1">
-                  Tamaño:
-                </label>
-                <select
-                  id={`size-${ceviche.id}`}
-                  value={selectedSizes[ceviche.id] || ''}
-                  onChange={(e) => handleSizeChange(ceviche.id, e.target.value)}
-                  className="border p-2 rounded w-full"
-                >
-                  <option value="">Seleccione tamaño</option>
-                  {Object.keys(ceviche.prices).map((size) => (
-                    <option key={size} value={size}>
-                      {size}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="mb-4">
-                <label htmlFor={`quantity-${ceviche.id}`} className="block text-lg font-medium mb-1">
-                  Cantidad:
-                </label>
-                <input
-                  id={`quantity-${ceviche.id}`}
-                  type="number"
-                  value={quantities[ceviche.id] || ''}
-                  onChange={(e) => handleQuantityChange(ceviche.id, e.target.value)}
-                  className="border p-2 rounded w-full"
-                />
-              </div>
-              <button
-                onClick={() => handleAddToOrder(ceviche.id, selectedSizes[ceviche.id], quantities[ceviche.id])}
-                className="bg-green-500 text-white px-4 py-2 rounded-xl mt-4 hover:bg-green-600"
-              >
-                Agregar al Pedido
-              </button>
-            </div>
-          </div>
-        ))}
-      </div>
-      <div className="fixed bottom-4 right-4 bg-white shadow-lg p-4 rounded-xl border z-50 space-y-2 w-64 sm:w-72">
-        <h3 className="text-lg font-bold">Resumen del Pedido</h3>
-        {order.length > 0 ? (
-          <ul>
-            {order.map((item) => (
-              <li key={item.id} className="text-sm my-1 flex justify-between items-center">
-                <span>{item.quantity}x {item.cevicheName} ({item.size}) - ${item.price * item.quantity}</span>
-                <button
-                  onClick={() => handleRemoveFromOrder(item.id)}
-                  className="text-red-500 text-xs ml-2"
-                >
-                  Eliminar
-                </button>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="text-gray-500 text-sm">El pedido está vacío.</p>
-        )}
-        <div className="border-t pt-2 mt-2">
-          <div className="flex justify-between items-center mb-2">
-            <span className="text-gray-700">Total:</span>
-            <span className="font-bold text-lg">${order.reduce((sum, item) => sum + item.price * item.quantity, 0).toFixed(2)}</span>
-          </div>
-          {errors && <p className="text-red-500 text-sm mb-2">{errors}</p>}
-          <button
-            onClick={handleSendOrder}
-            disabled={order.length === 0}
-            className={`w-full px-4 py-2 rounded-xl text-white ${order.length === 0 ? 'bg-gray-400 cursor-not-allowed' : 'bg-orange-500 hover:bg-orange-600'}`}
-          >
-            Enviar Pedido
-          </button>
-        </div>
-      </div>
-    </div>
-  );
+  const handleSendOrder = async () => {
+    if (order.length === 0) {
+      setErrors('El carrito está vacío.');
+      return;
+    }
+    setLoading(true);
+
+    const total = order.reduce((sum, item) => sum + item.subtotal, 0);
+    const deliveryText = isDelivery ? 'Sí' : 'No';
+    const yappyText = isYappy ? 'Sí' : 'No';
+    const paymentMethod = isYappy ? 'Yappy' : 'Efectivo';
+    
+    const itemsText = order.map(item => {
+        const promoText = item.promos ? ` (Promos: ${item.promos})` : '';
+        return `• ${item.quantity}x ${item.cevicheName} (${item.size}) - $${item.subtotal.toFixed(2)}${promoText}`;
+    }).join('\n');
+    
+    const whatsappMsg = `*¡Nuevo Pedido!*\nUser: ${user.name}\n\n${itemsText}\n\n*Total: $${total.toFixed(2)}*\nDelivery: ${deliveryText}\nYappy: ${yappyText}`;
+    const whatsappLink = `https://wa.me/50767961550?text=${encodeURIComponent(whatsappMsg)}`;
+
+    try {
+      await addDoc(collection(db, 'orders'), {
+        user: user.name,
+        items: order,
+        total,
+        isDelivery,
+        isYappy,
+        paymentMethod,
+        promotionsUsed: { promoCorvina, promo16oz },
+        timestamp: new Date()
+      });
+
+      window.open(whatsappLink, '_blank');
+      
+      setOrder([]);
+      setIsDelivery(false);
+      setIsYappy(false);
+      setShowSuccessPopup(true);
+      setTimeout(() => setShowSuccessPopup(false), 3000);
+      
+    } catch (e) {
+      console.error(e);
+      setErrors('Error al guardar el pedido.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handlers de Inventario y Cierre (igual que antes)
+  const handleSendInventoryReport = async () => {
+      try {
+        const whatsappMsg = `*Reporte Inventario - ${user.name}*\nFecha: ${new Date().toLocaleDateString()}\n(Reporte enviado a sistema)`; 
+        const link = `https://wa.me/50767961550?text=${encodeURIComponent(whatsappMsg)}`;
+        await addDoc(collection(db, 'daily_inventory_reports'), { user: user.name, date: new Date().toDateString(), inventory: inventoryDailyReport, timestamp: new Date() });
+        window.open(link, '_blank');
+        setInventoryReportSent(true);
+        setShowInventoryModal(false);
+        setInventoryModalError(null);
+      } catch (e) { setInventoryModalError("Error: " + e.message); }
+  };
+
+  const handleSendClosingReport = async () => {
+     try {
+         const cashReported = parseFloat(closingRegisterReport.dinero);
+         if (isNaN(cashReported)) { setClosingModalError("Monto inválido"); return; }
+         const diff = cashReported - dailyTotals.efectivo;
+         const msg = `*Cierre de Caja*\nUser: ${user.name}\nVenta Efectivo Sistema: $${dailyTotals.efectivo.toFixed(2)}\nReportado en Caja: $${cashReported.toFixed(2)}\nDiferencia: $${diff.toFixed(2)}`;
+         const link = `https://wa.me/50767961550?text=${encodeURIComponent(msg)}`;
+         await addDoc(collection(db, 'daily_closing_reports'), { user: user.name, date: new Date().toDateString(), cashReported, systemTotals: dailyTotals, timestamp: new Date() });
+         window.open(link, '_blank');
+         setShowCloseRegisterModal(false);
+         setClosingModalError(null);
+     } catch (e) { setClosingModalError(e.message); }
+  };
+
+
+  // --- RENDERS ---
+
+  if (!isLoggedIn) {
+    return (
+      <div className="h-screen flex items-center justify-center bg-orange-50">
+        <div className="bg-white p-8 rounded-2xl shadow-xl w-full max-w-sm border border-orange-100">
+          <h2 className="text-2xl font-bold mb-6 text-center text-orange-600">Ceviche Sandra</h2>
+          <input type="text" placeholder="Usuario" className="w-full mb-3 p-3 border rounded-xl" value={loginForm.name} onChange={e => setLoginForm({ ...loginForm, name: e.target.value })} />
+          <input type="password" placeholder="Contraseña" className="w-full mb-6 p-3 border rounded-xl" value={loginForm.password} onChange={e => setLoginForm({ ...loginForm, password: e.target.value })} />
+          {errors && <p className="text-red-500 text-sm text-center mb-4">{errors}</p>}
+          <button onClick={handleLogin} className="bg-orange-500 text-white px-4 py-3 rounded-xl w-full font-bold hover:bg-orange-600 transition">Iniciar Sesión</button>
+        </div>
+      </div>
+    );
+  }
+
+  if (showInventoryModal && !inventoryReportSent) {
+      return <InventoryTextForm inventoryDailyReport={inventoryDailyReport} setInventoryDailyReport={setInventoryDailyReport} onSubmit={handleSendInventoryReport} error={inventoryModalError} />;
+  }
+
+  if (showCloseRegisterModal) {
+      return <InventoryTextForm inventoryDailyReport={inventoryDailyReport} setInventoryDailyReport={setInventoryDailyReport} onSubmit={handleSendClosingReport} error={closingModalError} isClosingReport={true} dailyTotals={dailyTotals} closingRegisterReport={closingRegisterReport} setClosingRegisterReport={setClosingRegisterReport} />;
+  }
+
+  // --- RENDER PRINCIPAL ---
+  const grandTotal = order.reduce((sum, item) => sum + item.subtotal, 0);
+
+  return (
+    <div className="min-h-screen bg-gray-50 flex flex-col md:flex-row">
+      
+      {/* 1. SECCIÓN PRINCIPAL */}
+      <div className="flex-1 p-4 md:p-6 pb-40 md:pb-6 md:mr-80"> 
+        <div className="flex justify-between items-center mb-4">
+            <h1 className="text-2xl font-bold text-gray-800">Menú</h1>
+            <span className="bg-orange-100 text-orange-700 px-3 py-1 rounded-full text-sm font-medium">
+                Hola, {user.name}
+            </span>
+        </div>
+
+        {/* SECCIÓN DE PROMOCIONES (NUEVO) */}
+        <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 mb-6 shadow-sm">
+            <h3 className="font-bold text-yellow-800 flex items-center gap-2 mb-3">
+                <FaTag /> Promociones del Día
+            </h3>
+            <div className="flex flex-col sm:flex-row gap-4">
+                {/* Promo Coctel Corvina */}
+                <label className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${promoCorvina ? 'bg-yellow-100 border-yellow-400 ring-1 ring-yellow-400' : 'bg-white border-gray-200 hover:bg-gray-50'}`}>
+                    <input 
+                        type="checkbox" 
+                        checked={promoCorvina} 
+                        onChange={() => setPromoCorvina(!promoCorvina)}
+                        className="w-5 h-5 accent-orange-500"
+                    />
+                    <div>
+                        <span className="font-bold text-gray-800 block text-sm">Cóctel Corvina $5.50</span>
+                        <span className="text-xs text-gray-500">Normalmente $7.00</span>
+                    </div>
+                </label>
+
+                {/* Promo 16oz */}
+                <label className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${promo16oz ? 'bg-yellow-100 border-yellow-400 ring-1 ring-yellow-400' : 'bg-white border-gray-200 hover:bg-gray-50'}`}>
+                    <input 
+                        type="checkbox" 
+                        checked={promo16oz} 
+                        onChange={() => setPromo16oz(!promo16oz)}
+                        className="w-5 h-5 accent-orange-500"
+                    />
+                    <div>
+                        <span className="font-bold text-gray-800 block text-sm">-$1.00 en Pintas (16oz)</span>
+                        <span className="text-xs text-gray-500">Descuento en todos los 16oz</span>
+                    </div>
+                </label>
+            </div>
+        </div>
+
+        {/* GRID DE PRODUCTOS */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {cevichesData.map((ceviche) => (
+            <div key={ceviche.id} className="bg-white rounded-2xl shadow-sm hover:shadow-md transition border border-gray-100 overflow-hidden flex flex-col h-[450px]">
+              {/* Imagen Controlada */}
+              <div className="h-48 w-full bg-gray-200 relative">
+                {typeof ceviche.image === 'string' ? (
+                  <img src={ceviche.image} alt={ceviche.name} className="w-full h-full object-cover" />
+                ) : (
+                  <Slider {...settings} className="h-full w-full overflow-hidden">
+                    {Object.values(ceviche.image).map((img, i) => (
+                      <div key={i} className="h-48 w-full outline-none">
+                        <img src={img} alt="" className="w-full h-full object-cover block" />
+                      </div>
+                    ))}
+                  </Slider>
+                )}
+              </div>
+              
+              <div className="p-4 flex flex-col flex-1 justify-between">
+                <div>
+                   <h3 className="font-bold text-lg text-gray-800 mb-1 leading-tight">{ceviche.name}</h3>
+                </div>
+                
+                <div className="mt-2 space-y-3">
+                    <div>
+                        <label className="text-xs text-gray-500 uppercase font-bold block mb-1">Tamaño</label>
+                        <select
+                            value={selectedSizes[ceviche.id] || ''}
+                            onChange={(e) => setSelectedSizes({...selectedSizes, [ceviche.id]: e.target.value})}
+                            className="w-full p-2 border border-gray-300 rounded-lg bg-white text-sm focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none"
+                        >
+                            <option value="">Seleccionar...</option>
+                            {Object.keys(ceviche.prices).map(size => (
+                                <option key={size} value={size}>{size} - ${ceviche.prices[size]}</option>
+                            ))}
+                        </select>
+                    </div>
+                    
+                    <div className="flex gap-2 items-end">
+                        {/* SELECT DEL 1 AL 10 (NUEVO) */}
+                        <div className="w-20">
+                            <label className="text-xs text-gray-500 uppercase font-bold block mb-1">Cant.</label>
+                            <select
+                                value={quantities[ceviche.id] || 1}
+                                onChange={(e) => setQuantities({...quantities, [ceviche.id]: parseInt(e.target.value)})}
+                                className="w-full p-2 border border-gray-300 rounded-lg bg-white text-center text-sm focus:border-orange-500 outline-none cursor-pointer"
+                            >
+                                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => (
+                                    <option key={num} value={num}>{num}</option>
+                                ))}
+                            </select>
+                        </div>
+                        <button
+                            onClick={() => handleAddToOrder(ceviche.id, selectedSizes[ceviche.id], quantities[ceviche.id])}
+                            className="bg-orange-500 hover:bg-orange-600 active:bg-orange-700 text-white p-2 rounded-lg font-medium flex-1 h-[38px] flex items-center justify-center transition shadow-sm text-sm"
+                        >
+                            Agregar
+                        </button>
+                    </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* 2. SIDEBAR (Fixed) */}
+      <div className="fixed bottom-0 left-0 right-0 md:top-0 md:left-auto md:right-0 md:w-80 bg-white shadow-[0_-4px_20px_rgba(0,0,0,0.1)] md:shadow-[-4px_0_20px_rgba(0,0,0,0.05)] z-50 flex flex-col max-h-[60vh] md:max-h-screen">
+        <div className="p-4 bg-orange-600 text-white flex justify-between items-center shadow-sm">
+            <h2 className="font-bold text-lg">Resumen</h2>
+            <span className="text-sm bg-white/20 px-2 py-1 rounded">{order.length} items</span>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50">
+            {order.length === 0 ? (
+                <div className="text-center text-gray-400 py-10">
+                    <p>El carrito está vacío</p>
+                </div>
+            ) : (
+                order.map((item) => (
+                    <div key={item.id} className="bg-white p-3 rounded-lg shadow-sm border border-gray-100 flex justify-between items-start">
+                        <div>
+                            <p className="font-bold text-gray-800 text-sm">{item.cevicheName}</p>
+                            <p className="text-xs text-gray-500">{item.quantity} x {item.size}</p>
+                            {item.promos && <p className="text-[10px] text-green-600 font-bold mt-1">🏷️ {item.promos}</p>}
+                        </div>
+                        <div className="flex flex-col items-end">
+                            <span className="font-bold text-orange-600 text-sm">${item.subtotal.toFixed(2)}</span>
+                            <button onClick={() => handleRemoveFromOrder(item.id)} className="text-red-400 hover:text-red-600 text-xs mt-1"><FaTrash /></button>
+                        </div>
+                    </div>
+                ))
+            )}
+        </div>
+
+        <div className="p-4 bg-white border-t border-gray-200 space-y-3">
+            <div className="flex gap-4 mb-2">
+                <label className="flex items-center gap-2 cursor-pointer bg-gray-100 px-3 py-2 rounded-lg flex-1 justify-center hover:bg-gray-200">
+                    <input type="checkbox" checked={isDelivery} onChange={() => setIsDelivery(!isDelivery)} className="accent-orange-500" />
+                    <span className="text-sm font-medium">Delivery</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer bg-gray-100 px-3 py-2 rounded-lg flex-1 justify-center hover:bg-gray-200">
+                    <input type="checkbox" checked={isYappy} onChange={() => setIsYappy(!isYappy)} className="accent-blue-500" />
+                    <span className="text-sm font-medium">Yappy</span>
+                </label>
+            </div>
+
+            <div className="flex justify-between items-end mb-2">
+                <span className="text-gray-500 font-medium">Total a Pagar:</span>
+                <span className="text-2xl font-bold text-gray-800">${grandTotal.toFixed(2)}</span>
+            </div>
+
+            <button onClick={handleSendOrder} disabled={order.length === 0 || loading} className={`w-full py-3 rounded-xl font-bold text-white shadow-lg flex items-center justify-center gap-2 transition ${order.length === 0 ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'}`}>
+                {loading ? 'Enviando...' : <><FaWhatsapp size={20}/> Confirmar Pedido</>}
+            </button>
+
+            <div className="grid grid-cols-2 gap-3 mt-2 pt-2 border-t">
+                <button onClick={() => setShowCloseRegisterModal(true)} className="flex items-center justify-center gap-2 py-2 text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg"><FaCashRegister /> Cierre Caja</button>
+                <button onClick={handleLogout} className="flex items-center justify-center gap-2 py-2 text-sm font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded-lg"><FaSignOutAlt /> Salir</button>
+            </div>
+            
+            {errors && <p className="text-red-500 text-xs text-center">{errors}</p>}
+        </div>
+      </div>
+
+      {showSuccessPopup && (
+        <div className="fixed top-5 right-5 md:right-96 bg-green-500 text-white px-6 py-3 rounded-xl shadow-xl z-[100] animate-bounce">
+            ✅ Pedido enviado con éxito
+        </div>
+      )}
+    </div>
+  );
 };
 
 export default CevicheVenta;
