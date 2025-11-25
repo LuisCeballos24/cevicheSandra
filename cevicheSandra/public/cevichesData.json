@@ -231,6 +231,24 @@
     },
     {
         "id": 18,
+        "name": "Nachos Extra Pequeños",
+        "prices": {
+            "1": 0.50
+        },
+        "image": "/ejemploPedido.png",
+        "description": "nachos extra pequeños"
+    },
+    {
+        "id": 19,
+        "name": "Nachos Extra Grandes",
+        "prices": {
+            "1": 1.00
+        },
+        "image": "/ejemploPedido2.png",
+        "description": "Nachos Extra Grandes"
+    },
+    {
+        "id": 20,
         "name": "Bon Bon Bum",
         "prices": {
             "1": 0.25
@@ -239,7 +257,7 @@
         "description": "bon bon bum"
     },
     {
-        "id": 19,
+        "id": 21,
         "name": "platanitos",
         "prices": {
             "1": 0.50
