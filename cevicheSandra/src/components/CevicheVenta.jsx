@@ -3,16 +3,20 @@ import { db } from './FirebaseConfig';
 import { collection, addDoc, query, where, getDocs, Timestamp } from 'firebase/firestore';
 import Slider from 'react-slick';
 import InventoryTextForm from './InventoryTextForm';
-import { FaTrash, FaSignOutAlt, FaCashRegister, FaWhatsapp, FaTag } from 'react-icons/fa';
+import { FaTrash, FaSignOutAlt, FaCashRegister, FaWhatsapp, FaTag, FaCreditCard } from 'react-icons/fa';
 
 const CevicheVenta = () => {
-  // --- ESTADOS ---
+  // ==========================================
+  // 1. ESTADOS (STATES)
+  // ==========================================
+  
+  // Datos y Carrito
   const [cevichesData, setCevichesData] = useState([]);
   const [order, setOrder] = useState([]); 
   const [selectedSizes, setSelectedSizes] = useState({});
   const [quantities, setQuantities] = useState({});
   
-  // Promociones
+  // Promociones Activas
   const [promoCorvina, setPromoCorvina] = useState(false);
   const [promo16oz, setPromo16oz] = useState(false);
 
@@ -28,27 +32,36 @@ const CevicheVenta = () => {
   const [showInventoryModal, setShowInventoryModal] = useState(false);
   const [showCloseRegisterModal, setShowCloseRegisterModal] = useState(false);
   
-  // Opciones de Pedido
+  // Opciones de Pedido (Métodos de Pago)
   const [isDelivery, setIsDelivery] = useState(false);
   const [isYappy, setIsYappy] = useState(false);
+  const [isCard, setIsCard] = useState(false); // <--- NUEVO ESTADO PARA TARJETA
 
-  // Inventario y Cierre
+  // Inventario y Reportes
   const [inventoryDailyReport, setInventoryDailyReport] = useState({});
   const [inventoryReportSent, setInventoryReportSent] = useState(false);
   const [inventoryModalError, setInventoryModalError] = useState(null);
-  const [dailyTotals, setDailyTotals] = useState({ efectivo: 0, yappy: 0 });
+  
+  // Totales Diarios (Sistema)
+  const [dailyTotals, setDailyTotals] = useState({ efectivo: 0, yappy: 0, tarjeta: 0 }); // <--- AGREGADO TARJETA
   const [closingRegisterReport, setClosingRegisterReport] = useState({ dinero: '' });
   const [closingModalError, setClosingModalError] = useState(null);
 
+  // Configuración Slider
   const settings = { dots: true, infinite: true, speed: 500, slidesToShow: 1, slidesToScroll: 1 };
 
+  // Usuarios Válidos
   const validUsers = {
     cevicheSandra: 'Ceviche.sandra@24',
     cevicheAltos: 'Altos.ceviche@24',
     cevichePraderas: 'Praderas.ceviche@24',
   };
 
-  // --- EFECTOS ---
+  // ==========================================
+  // 2. EFECTOS (USE EFFECTS)
+  // ==========================================
+
+  // A) Cargar Datos JSON e Inicializar Inventario
   useEffect(() => {
     const fetchCeviches = async () => {
       try {
@@ -56,7 +69,7 @@ const CevicheVenta = () => {
         const data = await response.json();
         setCevichesData(data);
         
-        // Inicializamos estados de venta
+        // Inicializar selects
         const initialSizes = {};
         const initialQts = {};
         data.forEach(c => {
@@ -66,33 +79,25 @@ const CevicheVenta = () => {
         setSelectedSizes(initialSizes);
         setQuantities(initialQts);
 
-        // --- CONFIGURACIÓN DEL REPORTE DE INVENTARIO ---
+        // Estructura Base del Inventario
         const initialCevicheState = { 
             galonLleno: false, galonMedio: false, galonMedioLleno: false, galonUnCuarto: false, noHay: false 
         };
 
         const initialReport = {
-            // 1. Insumos
+            // Insumos
             nachosGrande: '', nachosPequeno: '', vasos7oz: '', cucharas: false, bolsitas5x10: false,
             sodas: '', platanitos: '', envases16oz: '', envases24oz: '', uvas: false,
             kiwi: false, coco: false, pina: false, nachosSinPreparar: false, vuelto: false,
-
-            // 2. Ceviches y Cocteles
+            // Ceviches
             cevicheTradicionalCorvina: { ...initialCevicheState },
             cevicheCamaron: { ...initialCevicheState },
+            cevicheLangostino: { ...initialCevicheState },
             cevicheMixto: { ...initialCevicheState },
             cevicheConchaNegra: { ...initialCevicheState },
-            coctelMixto: { ...initialCevicheState },
-            coctelCamaron: { ...initialCevicheState },
-            coctelCorvina: { ...initialCevicheState },
-            coctelTropical: { ...initialCevicheState },
             cevichePulpo: { ...initialCevicheState },
             cevicheCombinacion: { ...initialCevicheState },
-            coctelPersonalizado: { ...initialCevicheState },
-            coctelHawaiCorvina: { ...initialCevicheState },
-            coctelHawaiCamaronPulpo: { ...initialCevicheState },
         };
-
         setInventoryDailyReport(initialReport);
 
       } catch (error) {
@@ -102,6 +107,7 @@ const CevicheVenta = () => {
     fetchCeviches();
   }, []);
 
+  // B) Verificar Sesión e Inventario Diario
   useEffect(() => {
     const checkSessionAndInventory = async () => {
       const session = localStorage.getItem('isLoggedIn');
@@ -135,6 +141,7 @@ const CevicheVenta = () => {
     checkSessionAndInventory();
   }, []);
 
+  // C) Calcular Totales Diarios para el Cierre de Caja
   useEffect(() => {
     const fetchDailySales = async () => {
       if (showCloseRegisterModal && user?.name) {
@@ -149,22 +156,28 @@ const CevicheVenta = () => {
             where("timestamp", "<=", endOfDay)
           );
           const querySnapshot = await getDocs(q);
+          
           let totalEfectivo = 0;
           let totalYappy = 0;
+          let totalTarjeta = 0; // Acumulador Tarjeta
           
           querySnapshot.forEach((doc) => {
             const orderData = doc.data();
             if (orderData.user !== user.name) return;
             
             const monto = parseFloat(orderData.total) || 0;
+            
+            // Clasificación de Venta
             if (orderData.paymentMethod === "Yappy") {
               totalYappy += monto;
+            } else if (orderData.paymentMethod === "Tarjeta") {
+              totalTarjeta += monto;
             } else {
               totalEfectivo += monto;
             }
           });
           
-          setDailyTotals({ efectivo: totalEfectivo, yappy: totalYappy });
+          setDailyTotals({ efectivo: totalEfectivo, yappy: totalYappy, tarjeta: totalTarjeta });
           setClosingRegisterReport(prev => ({ ...prev, dinero: totalEfectivo.toFixed(2) }));
           
         } catch (error) {
@@ -176,7 +189,9 @@ const CevicheVenta = () => {
   }, [showCloseRegisterModal, user?.name]);
 
 
-  // --- HANDLERS ---
+  // ==========================================
+  // 3. HANDLERS (LOGICA)
+  // ==========================================
 
   const handleLogin = () => {
     const { name, password } = loginForm;
@@ -198,33 +213,26 @@ const CevicheVenta = () => {
     setUser(null);
   };
 
-  // --- LÓGICA PRINCIPAL DE PRECIOS Y PROMOCIONES (CORREGIDO ID 8) ---
+  // Agregar al Carrito (Con Lógica de Promociones)
   const handleAddToOrder = (cevicheId, size, quantity) => {
     if (!size || quantity <= 0) {
       setErrors('Selecciona un tamaño y cantidad válidos.');
       return;
     }
     const ceviche = cevichesData.find(c => c.id === cevicheId);
-    
-    // Convertimos precio a número para evitar errores
     const originalPrice = parseFloat(ceviche.prices[size]);
     let finalPrice = originalPrice; 
     let appliedPromos = [];
 
-    // --- LÓGICA DE PRIORIDAD DE DESCUENTOS ---
-
-    // Detectar si es Coctel Corvina usando el ID 8
-    // Usamos '==' (doble igual) para que coincida si el ID es 8 (número) o "8" (string)
+    // Lógica Promociones
     const isCoctelCorvina = (cevicheId == 8);
 
-    // 1. PRIMERO: Verificamos Promo Corvina ($5.50)
-    // Se cumple si: Checkbox activo + Es ID 8 + Es 16oz
+    // 1. Promo Corvina ($5.50)
     if (promoCorvina && isCoctelCorvina && size === '16oz') {
         finalPrice = 5.50;
         appliedPromos.push("Promo Corvina ($5.50)");
     } 
-    // 2. SEGUNDO: Si NO entró en la anterior, verificamos Promo General ($1.00 OFF)
-    // Se cumple si: Checkbox activo + Es 16oz (y no se aplicó la de 5.50)
+    // 2. Promo General (-$1.00)
     else if (promo16oz && size === '16oz') {
         finalPrice = finalPrice - 1.00;
         appliedPromos.push("-1$ 16oz");
@@ -239,13 +247,12 @@ const CevicheVenta = () => {
       size,
       quantity: parseInt(quantity),
       originalPrice: originalPrice, 
-      price: finalPrice, // Precio ya con descuento
+      price: finalPrice, 
       subtotal: subtotal,
       promos: appliedPromos.join(', ')
     };
 
     setOrder(prev => [...prev, newItem]);
-    
     setSelectedSizes(prev => ({ ...prev, [cevicheId]: '' }));
     setQuantities(prev => ({ ...prev, [cevicheId]: 1 }));
     setErrors(null);
@@ -255,6 +262,7 @@ const CevicheVenta = () => {
     setOrder(prev => prev.filter(item => item.id !== itemId));
   };
 
+  // Enviar Pedido (WhatsApp + Firebase)
   const handleSendOrder = async () => {
     if (order.length === 0) {
       setErrors('El carrito está vacío.');
@@ -262,28 +270,39 @@ const CevicheVenta = () => {
     }
     setLoading(true);
 
-    // Sumamos los subtotales que YA tienen el precio descontado
     const total = order.reduce((sum, item) => sum + item.subtotal, 0);
-    
     const deliveryText = isDelivery ? 'Sí' : 'No';
-    const yappyText = isYappy ? 'Sí' : 'No';
-    const paymentMethod = isYappy ? 'Yappy' : 'Efectivo';
+    
+    // Lógica Texto Método de Pago
+    let paymentMethod = 'Efectivo';
+    let yappyText = 'No';
+    let cardText = 'No';
+
+    if (isYappy) {
+        paymentMethod = 'Yappy';
+        yappyText = 'Sí';
+    } else if (isCard) {
+        paymentMethod = 'Tarjeta';
+        cardText = 'Sí';
+    }
     
     const itemsText = order.map(item => {
         const promoText = item.promos ? ` (Promos: ${item.promos})` : '';
         return `• ${item.quantity}x ${item.cevicheName} (${item.size}) - $${item.subtotal.toFixed(2)}${promoText}`;
     }).join('\n');
     
-    const whatsappMsg = `*¡Nuevo Pedido!*\nUser: ${user.name}\n\n${itemsText}\n\n*Total: $${total.toFixed(2)}*\nDelivery: ${deliveryText}\nYappy: ${yappyText}`;
+    // Mensaje WhatsApp
+    const whatsappMsg = `*¡Nuevo Pedido!*\nUser: ${user.name}\n\n${itemsText}\n\n*Total: $${total.toFixed(2)}*\nDelivery: ${deliveryText}\nYappy: ${yappyText}\nTarjeta: ${cardText}`;
     const whatsappLink = `https://wa.me/50767961550?text=${encodeURIComponent(whatsappMsg)}`;
 
     try {
       await addDoc(collection(db, 'orders'), {
         user: user.name,
         items: order, 
-        total: total, // Enviamos el total ya con descuento
+        total: total, 
         isDelivery,
         isYappy,
+        isCard, // Guardamos flag tarjeta
         paymentMethod,
         promotionsUsed: { promoCorvina, promo16oz },
         timestamp: new Date()
@@ -291,9 +310,11 @@ const CevicheVenta = () => {
 
       window.open(whatsappLink, '_blank');
       
+      // Resetear
       setOrder([]);
       setIsDelivery(false);
       setIsYappy(false);
+      setIsCard(false);
       setShowSuccessPopup(true);
       setTimeout(() => setShowSuccessPopup(false), 3000);
       
@@ -305,7 +326,7 @@ const CevicheVenta = () => {
     }
   };
 
-  // Handlers de Inventario y Cierre
+  // Enviar Reporte Inventario Inicial
   const handleSendInventoryReport = async () => {
       try {
         let inventoryText = "";
@@ -321,7 +342,13 @@ const CevicheVenta = () => {
                  else if (value.galonMedio) level = "Medio Galón (2/4)";
                  else if (value.galonUnCuarto) level = "Un Cuarto (1/4)";
                  else if (value.noHay) level = "VACÍO";
-                 inventoryText += `\n- ${name}: ${level}`;
+                   let receivedMsg = "";
+                 if (value.receivedQuantity && value.receivedQuantity > 0) {
+                    receivedMsg = ` | 📦 Recibió: ${value.receivedQuantity} ${value.receivedQuantity === 1 ? 'gln' : 'glns'}`;
+                 }
+
+                 // 3. Concatenar
+                 inventoryText += `\n- ${name}: ${level}${receivedMsg}`;
              } else if (typeof value === 'boolean') {
                  inventoryText += `\n- ${name}: ${value ? 'NO HAY' : 'Sí hay'}`;
              } else {
@@ -349,6 +376,7 @@ const CevicheVenta = () => {
       }
   };
 
+  // Enviar Reporte Cierre de Caja
   const handleSendClosingReport = async () => {
      try {
          const cashReported = parseFloat(closingRegisterReport.dinero);
@@ -356,6 +384,7 @@ const CevicheVenta = () => {
          const diff = cashReported - dailyTotals.efectivo;
 
          let inventoryText = "";
+         // Generación de texto de inventario (reutilizada)
          for (const [key, value] of Object.entries(inventoryDailyReport)) {
              let name = key;
              const ceviche = cevichesData.find(c => c.id === key);
@@ -376,7 +405,8 @@ const CevicheVenta = () => {
              }
          }
 
-         const msg = `*Cierre de Caja - ${user.name}*\nFecha: ${new Date().toLocaleDateString()}\n\n*DINERO:*\n- Sistema (Efectivo): $${dailyTotals.efectivo.toFixed(2)}\n- En Caja (Real): $${cashReported.toFixed(2)}\n- Diferencia: $${diff.toFixed(2)}\n\n*INVENTARIO FINAL:*${inventoryText}`;
+         // Mensaje Cierre (Incluye Tarjeta)
+         const msg = `*Cierre de Caja - ${user.name}*\nFecha: ${new Date().toLocaleDateString()}\n\n*DINERO:*\n- Sistema (Efectivo): $${dailyTotals.efectivo.toFixed(2)}\n- Sistema (Yappy): $${dailyTotals.yappy.toFixed(2)}\n- Sistema (Tarjeta): $${dailyTotals.tarjeta.toFixed(2)}\n----------------\n- En Caja (Efectivo Real): $${cashReported.toFixed(2)}\n- Diferencia Efectivo: $${diff.toFixed(2)}\n\n*INVENTARIO FINAL:*${inventoryText}`;
          const link = `https://wa.me/50767961550?text=${encodeURIComponent(msg)}`;
          
          await addDoc(collection(db, 'daily_closing_reports'), { 
@@ -395,8 +425,11 @@ const CevicheVenta = () => {
   };
 
 
-  // --- RENDERS ---
+  // ==========================================
+  // 4. RENDERS (UI)
+  // ==========================================
 
+  // A) Pantalla de Login
   if (!isLoggedIn) {
     return (
       <div className="h-screen flex items-center justify-center bg-orange-50">
@@ -411,6 +444,7 @@ const CevicheVenta = () => {
     );
   }
 
+  // B) Modal Inventario Inicial
   if (showInventoryModal && !inventoryReportSent) {
       return <InventoryTextForm 
                 inventoryDailyReport={inventoryDailyReport} 
@@ -420,6 +454,7 @@ const CevicheVenta = () => {
              />;
   }
 
+  // C) Modal Cierre Caja
   if (showCloseRegisterModal) {
       return <InventoryTextForm 
                 inventoryDailyReport={inventoryDailyReport} 
@@ -433,14 +468,15 @@ const CevicheVenta = () => {
              />;
   }
 
-  // --- RENDER PRINCIPAL ---
+  // D) RENDER PRINCIPAL (APP)
   const grandTotal = order.reduce((sum, item) => sum + item.subtotal, 0);
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col md:flex-row">
       
-      {/* 1. SECCIÓN PRINCIPAL */}
+      {/* SECCIÓN IZQUIERDA: MENÚ Y PRODUCTOS */}
       <div className="flex-1 p-4 md:p-6 pb-40 md:pb-6 md:mr-80"> 
+        {/* Header */}
         <div className="flex justify-between items-center mb-4">
             <h1 className="text-2xl font-bold text-gray-800">Menú</h1>
             <span className="bg-orange-100 text-orange-700 px-3 py-1 rounded-full text-sm font-medium">
@@ -448,7 +484,7 @@ const CevicheVenta = () => {
             </span>
         </div>
 
-        {/* PROMOCIONES */}
+        {/* Panel de Promociones */}
         <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 mb-6 shadow-sm">
             <h3 className="font-bold text-yellow-800 flex items-center gap-2 mb-3">
                 <FaTag /> Promociones del Día
@@ -465,10 +501,11 @@ const CevicheVenta = () => {
             </div>
         </div>
 
-        {/* GRID DE PRODUCTOS */}
+        {/* Grid de Ceviches */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {cevichesData.map((ceviche) => (
             <div key={ceviche.id} className="bg-white rounded-2xl shadow-sm hover:shadow-md transition border border-gray-100 overflow-hidden flex flex-col h-[450px]">
+              {/* Imagen / Slider */}
               <div className="h-48 w-full bg-gray-200 relative">
                 {typeof ceviche.image === 'string' ? (
                   <img src={ceviche.image} alt={ceviche.name} className="w-full h-full object-cover" />
@@ -483,6 +520,7 @@ const CevicheVenta = () => {
                 )}
               </div>
               
+              {/* Info y Selectores */}
               <div className="p-4 flex flex-col flex-1 justify-between">
                 <div><h3 className="font-bold text-lg text-gray-800 mb-1 leading-tight">{ceviche.name}</h3></div>
                 
@@ -511,13 +549,14 @@ const CevicheVenta = () => {
         </div>
       </div>
 
-      {/* 2. SIDEBAR (Fixed) */}
+      {/* SECCIÓN DERECHA: SIDEBAR (CARRITO) */}
       <div className="fixed bottom-0 left-0 right-0 md:top-0 md:left-auto md:right-0 md:w-80 bg-white shadow-[0_-4px_20px_rgba(0,0,0,0.1)] md:shadow-[-4px_0_20px_rgba(0,0,0,0.05)] z-50 flex flex-col max-h-[60vh] md:max-h-screen">
         <div className="p-4 bg-orange-600 text-white flex justify-between items-center shadow-sm">
             <h2 className="font-bold text-lg">Resumen</h2>
             <span className="text-sm bg-white/20 px-2 py-1 rounded">{order.length} items</span>
         </div>
 
+        {/* Lista de Items */}
         <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50">
             {order.length === 0 ? (
                 <div className="text-center text-gray-400 py-10"><p>El carrito está vacío</p></div>
@@ -528,7 +567,7 @@ const CevicheVenta = () => {
                             <p className="font-bold text-gray-800 text-sm">{item.cevicheName}</p>
                             <p className="text-xs text-gray-500">{item.quantity} x {item.size}</p>
                             
-                            {/* VISUALIZACIÓN DEL DESCUENTO */}
+                            {/* Visualización Descuentos */}
                             {item.originalPrice !== item.price && (
                                 <p className="text-[10px] text-gray-400 line-through">Antes: ${item.originalPrice.toFixed(2)}</p>
                             )}
@@ -543,17 +582,51 @@ const CevicheVenta = () => {
             )}
         </div>
 
+        {/* Footer del Carrito y Botones Finales */}
         <div className="p-4 bg-white border-t border-gray-200 space-y-3">
-            <div className="flex gap-4 mb-2">
-                <label className="flex items-center gap-2 cursor-pointer bg-gray-100 px-3 py-2 rounded-lg flex-1 justify-center hover:bg-gray-200"><input type="checkbox" checked={isDelivery} onChange={() => setIsDelivery(!isDelivery)} className="accent-orange-500" /><span className="text-sm font-medium">Delivery</span></label>
-                <label className="flex items-center gap-2 cursor-pointer bg-gray-100 px-3 py-2 rounded-lg flex-1 justify-center hover:bg-gray-200"><input type="checkbox" checked={isYappy} onChange={() => setIsYappy(!isYappy)} className="accent-blue-500" /><span className="text-sm font-medium">Yappy</span></label>
+            
+            {/* Opciones de Pago y Delivery (INCLUYE TARJETA) */}
+            <div className="flex gap-2 mb-2">
+                <label className="flex items-center gap-2 cursor-pointer bg-gray-100 px-2 py-2 rounded-lg flex-1 justify-center hover:bg-gray-200">
+                    <input type="checkbox" checked={isDelivery} onChange={() => setIsDelivery(!isDelivery)} className="accent-orange-500" />
+                    <span className="text-xs font-medium">Deliv.</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer bg-gray-100 px-2 py-2 rounded-lg flex-1 justify-center hover:bg-gray-200">
+                    <input 
+                        type="checkbox" 
+                        checked={isYappy} 
+                        onChange={() => {
+                            setIsYappy(!isYappy);
+                            if (!isYappy) setIsCard(false); // Mutuamente exclusivo
+                        }} 
+                        className="accent-blue-500" 
+                    />
+                    <span className="text-xs font-medium">Yappy</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer bg-gray-100 px-2 py-2 rounded-lg flex-1 justify-center hover:bg-gray-200">
+                    <input 
+                        type="checkbox" 
+                        checked={isCard} 
+                        onChange={() => {
+                            setIsCard(!isCard);
+                            if (!isCard) setIsYappy(false); // Mutuamente exclusivo
+                        }} 
+                        className="accent-purple-500" 
+                    />
+                    <FaCreditCard className="text-gray-500" size={12}/>
+                    <span className="text-xs font-medium">Tarj.</span>
+                </label>
             </div>
+
             <div className="flex justify-between items-end mb-2"><span className="text-gray-500 font-medium">Total a Pagar:</span><span className="text-2xl font-bold text-gray-800">${grandTotal.toFixed(2)}</span></div>
+            
             <button onClick={handleSendOrder} disabled={order.length === 0 || loading} className={`w-full py-3 rounded-xl font-bold text-white shadow-lg flex items-center justify-center gap-2 transition ${order.length === 0 ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'}`}>{loading ? 'Enviando...' : <><FaWhatsapp size={20}/> Confirmar Pedido</>}</button>
+            
             <div className="grid grid-cols-2 gap-3 mt-2 pt-2 border-t">
                 <button onClick={() => setShowCloseRegisterModal(true)} className="flex items-center justify-center gap-2 py-2 text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg"><FaCashRegister /> Cierre Caja</button>
                 <button onClick={handleLogout} className="flex items-center justify-center gap-2 py-2 text-sm font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded-lg"><FaSignOutAlt /> Salir</button>
             </div>
+            
             {errors && <p className="text-red-500 text-xs text-center">{errors}</p>}
         </div>
       </div>

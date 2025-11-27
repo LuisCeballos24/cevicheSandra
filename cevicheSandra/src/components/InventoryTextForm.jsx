@@ -12,10 +12,11 @@ const InventoryTextForm = ({
   setClosingRegisterReport = () => {}, // Función para actualizar el campo de dinero
 }) => {
 
-  // Listado de claves que son ceviches/cócteles y necesitan las opciones de llenado
+  // Listado de claves que son ceviches/cócteles
   const cevicheKeys = [
     'cevicheTradicionalCorvina',
     'cevicheCamaron',
+    'cevicheLangostino',
     'cevicheMixto',
     'cevicheConchaNegra',
     'coctelMixto',
@@ -29,6 +30,9 @@ const InventoryTextForm = ({
     'coctelHawaiCamaronPulpo',
   ];
 
+  // Generar array [0, 1, ..., 10] para el dropdown
+  const quantityOptions = Array.from({ length: 11 }, (_, i) => i);
+
   const handleInputChange = (itemKey, e) => {
     const value = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
     setInventoryDailyReport(prev => ({
@@ -37,17 +41,22 @@ const InventoryTextForm = ({
     }));
   };
 
-  // Manejador específico para los radio buttons de ceviche
+  // Manejador específico para los radio buttons (Nivel de llenado)
   const handleCevicheLevelChange = (cevicheKey, levelOption) => {
     setInventoryDailyReport(prev => {
+      // Obtenemos el estado actual de este ceviche para no perder la cantidad recibida
+      const currentCevicheState = prev[cevicheKey] || {};
+
       const updatedCeviche = {
+        ...currentCevicheState, // Mantiene la propiedad receivedQuantity si ya existe
         galonLleno: false,
         galonMedio: false,
-        galonMedioLleno: false, // Mantienes esta opción
+        galonMedioLleno: false, 
         galonUnCuarto: false,
         noHay: false,
-        [levelOption]: true, // Marcar solo la opción seleccionada como true
+        [levelOption]: true, // Marcar solo la opción seleccionada
       };
+      
       return {
         ...prev,
         [cevicheKey]: updatedCeviche,
@@ -55,13 +64,23 @@ const InventoryTextForm = ({
     });
   };
 
-  // Nuevo manejador para el campo de dinero en el cierre de caja
+  // NUEVO: Manejador para la cantidad de galones recibidos
+  const handleNewGallonsChange = (cevicheKey, quantity) => {
+    setInventoryDailyReport(prev => ({
+        ...prev,
+        [cevicheKey]: {
+            ...prev[cevicheKey], // Mantiene los booleanos de los radio buttons
+            receivedQuantity: parseInt(quantity) // Agrega/Actualiza la cantidad recibida
+        }
+    }));
+  };
+
+  // Manejador para el campo de dinero en el cierre de caja
   const handleMoneyInputChange = (e) => {
     const value = e.target.value;
     setClosingRegisterReport(prev => ({ ...prev, dinero: value }));
   };
 
-  // Función para obtener el nombre legible del campo
   const getItemDisplayName = (itemKey) => {
     switch (itemKey) {
       case 'nachosGrande': return 'Nachos Grandes';
@@ -77,7 +96,6 @@ const InventoryTextForm = ({
       case 'pina': return 'Piña';
       case 'vuelto': return 'Te dieron Vuelto?';
       case 'nachosSinPreparar': return 'Nachos sin preparar';
-      // Nombres para los ceviches
       case 'cevicheTradicionalCorvina': return 'Ceviche Tradicional Corvina';
       case 'cevicheCamaron': return 'Ceviche Camarón';
       case 'cevicheMixto': return 'Ceviche Mixto';
@@ -107,7 +125,7 @@ const InventoryTextForm = ({
             : 'Por favor, ingresa las cantidades o marca el nivel de inventario para abrir el día.'}
         </p>
 
-        {/* Sección para el cierre de caja: Totales del día y campo de dinero */}
+        {/* Sección Totales (Solo Cierre) */}
         {isClosingReport && (
           <div className="mb-6 p-4 bg-blue-100 rounded-lg border border-blue-200">
             <h3 className="text-lg font-bold text-blue-800 mb-2">Totales del Día (Sistema):</h3>
@@ -120,88 +138,73 @@ const InventoryTextForm = ({
                 id="dinero"
                 type="number"
                 placeholder="Ingresa el efectivo"
-                onChange={handleMoneyInputChange} // Usa el nuevo manejador
+                onChange={handleMoneyInputChange}
                 className="w-full p-2 border rounded-lg focus:ring-green-500 focus:border-green-500 text-lg font-bold"
                 min="0"
-                step="0.01" // Permite valores decimales
+                step="0.01"
               />
             </div>
           </div>
         )}
 
-        {/* Título para el inventario, cambia según sea cierre o apertura */}
         <h3 className="text-xl font-bold mb-4 text-gray-800">
           {isClosingReport ? 'Inventario Final:' : 'Inventario Inicial:'}
         </h3>
 
-        {/* Iteración sobre los ítems del inventario */}
+        {/* Iteración de items */}
         {Object.keys(inventoryDailyReport).map((itemKey) => (
           <div key={itemKey} className="mb-4 p-3 border rounded-lg bg-red-50">
             <label htmlFor={itemKey} className="block text-lg font-semibold mb-2 text-gray-800">
               {getItemDisplayName(itemKey)}:
             </label>
-            {/* Renderizado condicional del input */}
+            
             {cevicheKeys.includes(itemKey) ? (
-              // Opciones para ceviches (radio buttons)
-              <div className="flex flex-wrap gap-x-4 gap-y-2">
-                <label className="inline-flex items-center">
-                  <input
-                    type="radio"
-                    name={`ceviche-${itemKey}`} // Agrupa los radios por nombre
-                    value="galonLleno"
-                    checked={inventoryDailyReport[itemKey].galonLleno}
-                    onChange={() => handleCevicheLevelChange(itemKey, 'galonLleno')}
-                    className="form-radio h-4 w-4 text-orange-600"
-                  />
-                  <span className="ml-2 text-gray-700">Galón Lleno 4/4</span>
-                </label>
-                <label className="inline-flex items-center">
-                  <input
-                    type="radio"
-                    name={`ceviche-${itemKey}`}
-                    value="galonMedioLleno"
-                    checked={inventoryDailyReport[itemKey].galonMedioLleno}
-                    onChange={() => handleCevicheLevelChange(itemKey, 'galonMedioLleno')}
-                    className="form-radio h-4 w-4 text-orange-600"
-                  />
-                  <span className="ml-2 text-gray-700">Medio Galón Casi lleno 3/4</span>
-                </label>
-                <label className="inline-flex items-center">
-                  <input
-                    type="radio"
-                    name={`ceviche-${itemKey}`}
-                    value="galonMedio"
-                    checked={inventoryDailyReport[itemKey].galonMedio}
-                    onChange={() => handleCevicheLevelChange(itemKey, 'galonMedio')}
-                    className="form-radio h-4 w-4 text-orange-600"
-                  />
-                  <span className="ml-2 text-gray-700">Medio Galón 2/4</span>
-                </label>
-                <label className="inline-flex items-center">
-                  <input
-                    type="radio"
-                    name={`ceviche-${itemKey}`}
-                    value="galonUnCuarto"
-                    checked={inventoryDailyReport[itemKey].galonUnCuarto}
-                    onChange={() => handleCevicheLevelChange(itemKey, 'galonUnCuarto')}
-                    className="form-radio h-4 w-4 text-orange-600"
-                  />
-                  <span className="ml-2 text-gray-700">Un Cuarto de Galón 1/4</span>
-                </label>
-                <label className="inline-flex items-center">
-                  <input
-                    type="radio"
-                    name={`ceviche-${itemKey}`}
-                    value="noHay"
-                    checked={inventoryDailyReport[itemKey].noHay}
-                    onChange={() => handleCevicheLevelChange(itemKey, 'noHay')}
-                    className="form-radio h-4 w-4 text-red-600"
-                  />
-                  <span className="ml-2 text-gray-700">No hay</span>
-                </label>
+              <div className="flex flex-col gap-3">
+                 {/* 1. RADIO BUTTONS (NIVEL ACTUAL) */}
+                 <div className="flex flex-wrap gap-x-4 gap-y-2">
+                    <label className="inline-flex items-center">
+                      <input type="radio" name={`ceviche-${itemKey}`} value="galonLleno" checked={inventoryDailyReport[itemKey].galonLleno} onChange={() => handleCevicheLevelChange(itemKey, 'galonLleno')} className="form-radio h-4 w-4 text-orange-600" />
+                      <span className="ml-2 text-gray-700 text-sm">Lleno (4/4)</span>
+                    </label>
+                    <label className="inline-flex items-center">
+                      <input type="radio" name={`ceviche-${itemKey}`} value="galonMedioLleno" checked={inventoryDailyReport[itemKey].galonMedioLleno} onChange={() => handleCevicheLevelChange(itemKey, 'galonMedioLleno')} className="form-radio h-4 w-4 text-orange-600" />
+                      <span className="ml-2 text-gray-700 text-sm">Casi Lleno (3/4)</span>
+                    </label>
+                    <label className="inline-flex items-center">
+                      <input type="radio" name={`ceviche-${itemKey}`} value="galonMedio" checked={inventoryDailyReport[itemKey].galonMedio} onChange={() => handleCevicheLevelChange(itemKey, 'galonMedio')} className="form-radio h-4 w-4 text-orange-600" />
+                      <span className="ml-2 text-gray-700 text-sm">Medio (2/4)</span>
+                    </label>
+                    <label className="inline-flex items-center">
+                      <input type="radio" name={`ceviche-${itemKey}`} value="galonUnCuarto" checked={inventoryDailyReport[itemKey].galonUnCuarto} onChange={() => handleCevicheLevelChange(itemKey, 'galonUnCuarto')} className="form-radio h-4 w-4 text-orange-600" />
+                      <span className="ml-2 text-gray-700 text-sm">Un Cuarto (1/4)</span>
+                    </label>
+                    <label className="inline-flex items-center">
+                      <input type="radio" name={`ceviche-${itemKey}`} value="noHay" checked={inventoryDailyReport[itemKey].noHay} onChange={() => handleCevicheLevelChange(itemKey, 'noHay')} className="form-radio h-4 w-4 text-red-600" />
+                      <span className="ml-2 text-gray-700 text-sm font-bold">VACÍO</span>
+                    </label>
+                 </div>
+
+                 {/* 2. LISTVIEW (DROPDOWN) PARA NUEVOS GALONES */}
+                 <div className="pt-2 border-t border-red-200 mt-1">
+                    <label className="block text-sm font-bold text-gray-700 mb-1">
+                        📦 ¿Cuántos galones te dieron?
+                    </label>
+                    <select 
+                        value={inventoryDailyReport[itemKey]?.receivedQuantity || 0} 
+                        onChange={(e) => handleNewGallonsChange(itemKey, e.target.value)}
+                        className="w-full p-2 border border-gray-300 rounded-lg bg-white focus:border-orange-500 outline-none"
+                    >
+                        {quantityOptions.map((num) => (
+                            <option key={num} value={num}>
+                                {num} {num === 1 ? 'galón' : 'galones'}
+                            </option>
+                        ))}
+                    </select>
+                 </div>
               </div>
+
             ) : ['uvas', 'kiwi', 'coco', 'pina', 'nachosSinPreparar', 'cucharas', 'bolsitas5x10','vuelto'].includes(itemKey) ? (
-              // Checkboxes para frutas, nachos sin preparar, cucharas, bolsitas5x10
+              // Checkboxes simples
               <div className="flex items-center">
                 <input
                   id={itemKey}
@@ -209,13 +212,11 @@ const InventoryTextForm = ({
                   checked={inventoryDailyReport[itemKey]}
                   onChange={(e) => handleInputChange(itemKey, e)}
                   className="form-checkbox h-5 w-5 text-orange-600 rounded mr-2"
-                  // Opcional: deshabilitar en el cierre si no se permite modificar
-                  // disabled={isClosingReport}
                 />
-                <span className="text-gray-700 font-normal text-sm">Selecciona esta casilla si no tienes de este producto</span> {/* Este mensaje es el que tenías, lo mantengo */}
+                <span className="text-gray-700 font-normal text-sm">Selecciona esta casilla si no tienes de este producto</span>
               </div>
             ) : (
-              // Inputs numéricos para otros ítems
+              // Inputs numéricos para insumos
               <input
                 id={itemKey}
                 type="number"
@@ -224,8 +225,6 @@ const InventoryTextForm = ({
                 onChange={(e) => handleInputChange(itemKey, e)}
                 className="w-full p-2 border rounded-lg focus:ring-orange-500 focus:border-orange-500"
                 min="0"
-                // Opcional: deshabilitar en el cierre si no se permite modificar
-                // disabled={isClosingReport}
               />
             )}
           </div>
