@@ -3,7 +3,7 @@ import { db } from './FirebaseConfig';
 import { collection, addDoc, query, where, getDocs, Timestamp } from 'firebase/firestore';
 import Slider from 'react-slick';
 import InventoryTextForm from './InventoryTextForm';
-import { FaTrash, FaSignOutAlt, FaCashRegister, FaWhatsapp, FaTag, FaCreditCard } from 'react-icons/fa';
+import { FaTrash, FaSignOutAlt, FaCashRegister, FaCheck, FaWhatsapp, FaTag, FaCreditCard } from 'react-icons/fa';
 
 const CevicheVenta = () => {
   // ==========================================
@@ -214,26 +214,29 @@ const CevicheVenta = () => {
     setUser(null);
   };
 
-  // Agregar al Carrito (Con Lógica de Promociones)
+  // --- [CORREGIDO AQUÍ] LÓGICA PRINCIPAL DE PRECIOS Y PROMOCIONES ---
   const handleAddToOrder = (cevicheId, size, quantity) => {
     if (!size || quantity <= 0) {
       setErrors('Selecciona un tamaño y cantidad válidos.');
       return;
     }
     const ceviche = cevichesData.find(c => c.id === cevicheId);
+    
+    // Parseamos a número para asegurar comparaciones
     const originalPrice = parseFloat(ceviche.prices[size]);
     let finalPrice = originalPrice; 
     let appliedPromos = [];
 
-    // Lógica Promociones
-    const isCoctelCorvina = (cevicheId == 8);
+    // [CORRECCIÓN]: Comparamos con ID 10 (según tu JSON) o el nombre exacto
+    // Antes tenías (cevicheId == 8), por eso fallaba.
+    const isCoctelCorvina = (cevicheId == 10 || ceviche.name === "Cóctel Corvina");
 
-    // 1. Promo Corvina ($5.50)
+    // 1. Promo Corvina ($5.50) - PRIORIDAD 1
     if (promoCorvina && isCoctelCorvina && size === '16oz') {
         finalPrice = 5.50;
         appliedPromos.push("Promo Corvina ($5.50)");
     } 
-    // 2. Promo General (-$1.00)
+    // 2. Promo General (-$1.00) - Solo si no entró en la primera
     else if (promo16oz && size === '16oz') {
         finalPrice = finalPrice - 1.00;
         appliedPromos.push("-1$ 16oz");
@@ -248,7 +251,7 @@ const CevicheVenta = () => {
       size,
       quantity: parseInt(quantity),
       originalPrice: originalPrice, 
-      price: finalPrice, 
+      price: finalPrice, // AQUÍ SE GUARDA EL PRECIO YA CON DESCUENTO
       subtotal: subtotal,
       promos: appliedPromos.join(', ')
     };
@@ -264,6 +267,8 @@ const CevicheVenta = () => {
   };
 
   // Enviar Pedido (WhatsApp + Firebase)
+  // Al corregir handleAddToOrder, 'order' ya tiene los precios correctos,
+  // así que esta función enviará los totales con descuento automáticamente.
   const handleSendOrder = async () => {
     if (order.length === 0) {
       setErrors('El carrito está vacío.');
@@ -289,6 +294,7 @@ const CevicheVenta = () => {
     
     const itemsText = order.map(item => {
         const promoText = item.promos ? ` (Promos: ${item.promos})` : '';
+        // item.subtotal ya tiene el descuento aplicado
         return `• ${item.quantity}x ${item.cevicheName} (${item.size}) - $${item.subtotal.toFixed(2)}${promoText}`;
     }).join('\n');
     
@@ -303,7 +309,7 @@ const CevicheVenta = () => {
         total: total, 
         isDelivery,
         isYappy,
-        isCard, // Guardamos flag tarjeta
+        isCard, 
         paymentMethod,
         promotionsUsed: { promoCorvina, promo16oz },
         timestamp: new Date()

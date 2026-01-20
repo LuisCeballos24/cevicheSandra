@@ -19,7 +19,7 @@
         "id": 2,
         "name": "Ceviche Camarón",
         "prices": {
-            "7oz": 4.50,
+            "7oz": 5.00,
             "16oz": 11.00,
             "24oz": 17.00,
             "medio galon": 45.00,
@@ -99,7 +99,7 @@
         "id": 7,
         "name": "Cóctel Camarón",
         "prices": {
-            "7oz": 5.00,
+            "7oz": 5.50,
             "16oz": 12.00,
             "24oz": 17.00,
             "medio galon": 46.00,
@@ -301,6 +301,24 @@
             "1": 1.00
         },
         "image": "/agua.jpg",
+        "description": "agua fresca"
+    },
+    {
+        "id": 25,
+        "name": "Soda luni dolar",
+        "prices": {
+            "1": 1.00
+        },
+        "image": "/luni.png",
+        "description": "agua fresca"
+    },
+    {
+        "id": 26,
+        "name": "Soda luni pequeña",
+        "prices": {
+            "1": 0.50
+        },
+        "image": "/lunipeque.png",
         "description": "agua fresca"
     }
 ]
