@@ -11,6 +11,7 @@ import About from './components/About';
 import Menu from './components/Menu';
 import Venta from './components/CevicheVenta';
 import CevicheDetail from './components/CevicheDetail';
+import MetricasNegocio from './components/MetricasNegocio';
 
 const App = () => {
   const [user, setUser] = useState(null);
@@ -55,6 +56,7 @@ const App = () => {
         <Route path="/menu" element={<Menu />} />
         <Route path="/venta" element={<Venta />} />
         <Route path="/ceviche/:id" element={<CevicheDetail />} />
+        <Route path="/metricas" element={<MetricasNegocio />} />
       </Routes>
       <Footer />
     </Router>

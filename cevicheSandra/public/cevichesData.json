@@ -6,8 +6,8 @@
             "7oz": 3.00,
             "16oz": 8.00,
             "24oz": 12.00,
-            "medio galon": 30.00,
-            "galon": 60.00
+            "medio galon": 20.00,
+            "galon": 35.00
         },
         "image": {
             "cevicheCorvina": "/cevicheCorvina.png",
@@ -68,8 +68,8 @@
         "name": "Ceviche Concha Negra",
         "prices": {
             "7oz": 3.50,
-            "16oz": 10.00,
-            "24oz": 12.50,
+            "16oz": 8.50,
+            "24oz": 12.00,
             "medio galon": 35.00,
             "galon": 70.00
         },
@@ -142,7 +142,7 @@
             "16oz": 7.00,
             "24oz": 10.00,
             "medio galon": 25.00,
-            "galon": 45.00
+            "galon": 40.00
         },
         "image": {
             "coctelCorvina": "/coctelCorvina.png",
@@ -172,7 +172,7 @@
         "prices": {
             "7oz": 3.50,
             "16oz": 8.50,
-            "24oz": 15.00,
+            "24oz": 12.50,
             "medio galon": 35.00,
             "galon": 70.00
         },
@@ -224,7 +224,7 @@
         "prices": {
             "7oz": 4.00,
             "16oz": 10.00,
-            "24oz": 17.00,
+            "24oz": 15.00,
             "medio galon": 45.00,
             "galon": 90.00
         },
@@ -293,5 +293,14 @@
         },
         "image": "/platanitos.PNG",
         "description": "platanitos frescos"
+    },
+    {
+        "id": 24,
+        "name": "agua",
+        "prices": {
+            "1": 1.00
+        },
+        "image": "/agua.jpg",
+        "description": "agua fresca"
     }
 ]

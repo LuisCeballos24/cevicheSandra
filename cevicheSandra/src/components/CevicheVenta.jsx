@@ -91,6 +91,7 @@ const CevicheVenta = () => {
             kiwi: false, coco: false, pina: false, nachosSinPreparar: false, vuelto: false,
             // Ceviches
             cevicheTradicionalCorvina: { ...initialCevicheState },
+            coctelCorvina: { ...initialCevicheState },
             cevicheCamaron: { ...initialCevicheState },
             cevicheLangostino: { ...initialCevicheState },
             cevicheMixto: { ...initialCevicheState },
