@@ -1,37 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { db } from './FirebaseConfig';
-import { collection, addDoc, query, where, getDocs, Timestamp } from 'firebase/firestore';
+import { collection, addDoc, query, where, getDocs } from 'firebase/firestore';
 import Slider from 'react-slick';
 import InventoryTextForm from './InventoryTextForm';
-import { FaTrash, FaSignOutAlt, FaCashRegister, FaCheck, FaWhatsapp, FaTag, FaCreditCard } from 'react-icons/fa';
+import { fetchTodayOrders, sumTotals } from './ventasUtils';
+import { FaTrash, FaSignOutAlt, FaCashRegister, FaWhatsapp, FaTag, FaCreditCard } from 'react-icons/fa';
 
 // Minutos hacia atrás en los que un pedido idéntico se considera posible repetición
 const DUPLICATE_WINDOW_MINUTES = 10;
 
-// Pedidos del día de un usuario (filtrado por usuario en cliente para no requerir índice compuesto)
-const fetchTodayOrders = async (userName) => {
-  const today = new Date();
-  const startOfDay = Timestamp.fromDate(new Date(today.getFullYear(), today.getMonth(), today.getDate(), 0, 0, 0));
-  const endOfDay = Timestamp.fromDate(new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59, 999));
+// Verifica si el usuario ya tiene un documento hoy en la colección dada
+const existsToday = async (collectionName, userName) => {
   const q = query(
-    collection(db, "orders"),
-    where("timestamp", ">=", startOfDay),
-    where("timestamp", "<=", endOfDay)
+    collection(db, collectionName),
+    where('user', '==', userName),
+    where('date', '==', new Date().toDateString())
   );
   const querySnapshot = await getDocs(q);
-  return querySnapshot.docs.map(d => d.data()).filter(o => o.user === userName);
-};
-
-// Clasificación de Venta por método de pago
-const sumTotals = (orders) => {
-  const totals = { efectivo: 0, yappy: 0, tarjeta: 0 };
-  orders.forEach(o => {
-    const monto = parseFloat(o.total) || 0;
-    if (o.paymentMethod === "Yappy") totals.yappy += monto;
-    else if (o.paymentMethod === "Tarjeta") totals.tarjeta += monto;
-    else totals.efectivo += monto;
-  });
-  return totals;
+  return !querySnapshot.empty;
 };
 
 // Firma de los items (sin importar el orden) para comparar pedidos
@@ -88,12 +74,12 @@ const CevicheVenta = () => {
   const [inventoryReportSent, setInventoryReportSent] = useState(false);
   const [inventoryModalError, setInventoryModalError] = useState(null);
   
-  // Totales Diarios (Sistema)
-  const [dailyTotals, setDailyTotals] = useState({ efectivo: 0, yappy: 0, tarjeta: 0 }); // <--- AGREGADO TARJETA
+  // Cierre de Caja (los totales del sistema no se muestran a las vendedoras)
   const [closingRegisterReport, setClosingRegisterReport] = useState({ dinero: '' });
   const [closingModalError, setClosingModalError] = useState(null);
+  const [showClosingConfirm, setShowClosingConfirm] = useState(false);
 
-  // Aviso de posible pedido repetido: { todayOrders, duplicate }
+  // Aviso de posible pedido repetido (pedido anterior idéntico)
   const [duplicateWarning, setDuplicateWarning] = useState(null);
 
   // Configuración Slider
@@ -184,34 +170,31 @@ const CevicheVenta = () => {
           }
         } catch (error) {
           console.error("Error verificando inventario:", error);
-          setShowInventoryModal(true); 
+          setShowInventoryModal(true);
         }
+
+        await checkPendingClosing(storedUserName);
       }
     };
     checkSessionAndInventory();
   }, []);
 
-  // C) Calcular Totales Diarios para el Cierre de Caja
-  useEffect(() => {
-    const fetchDailySales = async () => {
-      if (showCloseRegisterModal && user?.name) {
-        try {
-          const todayOrders = await fetchTodayOrders(user.name);
-          const totals = sumTotals(todayOrders);
-          setDailyTotals(totals);
-          setClosingRegisterReport(prev => ({ ...prev, dinero: totals.efectivo.toFixed(2) }));
-        } catch (error) {
-          console.error("Error fetching sales:", error);
-        }
-      }
-    };
-    fetchDailySales();
-  }, [showCloseRegisterModal, user?.name]);
-
 
   // ==========================================
   // 3. HANDLERS (LOGICA)
   // ==========================================
+
+  // Si el cierre se abrió pero no se envió (ej. recargaron la página), se obliga a terminarlo
+  const checkPendingClosing = async (userName) => {
+    try {
+      const started = await existsToday('closing_started', userName);
+      if (started && !(await existsToday('daily_closing_reports', userName))) {
+        setShowCloseRegisterModal(true);
+      }
+    } catch (error) {
+      console.error("Error verificando cierre pendiente:", error);
+    }
+  };
 
   const handleLogin = () => {
     const { name, password } = loginForm;
@@ -221,6 +204,7 @@ const CevicheVenta = () => {
       setUser({ name });
       setIsLoggedIn(true);
       setErrors(null);
+      checkPendingClosing(name);
     } else {
       setErrors('Credenciales incorrectas.');
     }
@@ -317,15 +301,15 @@ const CevicheVenta = () => {
     // Avisar antes de mandar si parece un pedido repetido
     const duplicate = findPossibleDuplicate(todayOrders, order, total);
     if (duplicate) {
-      setDuplicateWarning({ todayOrders, duplicate });
+      setDuplicateWarning(duplicate);
       setLoading(false);
       return;
     }
 
-    await submitOrder(todayOrders, false);
+    await submitOrder(false);
   };
 
-  const submitOrder = async (todayOrders, isPossibleDuplicate) => {
+  const submitOrder = async (isPossibleDuplicate) => {
     setDuplicateWarning(null);
     setLoading(true);
 
@@ -351,9 +335,6 @@ const CevicheVenta = () => {
         return `• ${item.quantity}x ${item.cevicheName} (${item.size}) - $${item.subtotal.toFixed(2)}${promoText}`;
     }).join('\n');
     
-    // Acumulado del día incluyendo este pedido
-    const dayTotals = sumTotals([...todayOrders, { total, paymentMethod }]);
-    const cardTotalText = dayTotals.tarjeta > 0 ? `\nTarjeta: $${dayTotals.tarjeta.toFixed(2)}` : '';
     const duplicateText = isPossibleDuplicate ? `⚠️ *POSIBLE PEDIDO REPETIDO* ⚠️\n` : '';
 
     // Monto recibido y cambio (solo efectivo)
@@ -363,7 +344,7 @@ const CevicheVenta = () => {
     const changeText = hasCashReceived ? `\nPaga con: $${received.toFixed(2)}\n*Cambio: $${change.toFixed(2)}*` : '';
 
     // Mensaje WhatsApp
-    const whatsappMsg = `${duplicateText}*¡Nuevo Pedido!*\nUser: ${user.name}\n\n${itemsText}\n\n*Total: $${total.toFixed(2)}*${changeText}\nDelivery: ${deliveryText}\nYappy: ${yappyText}\nTarjeta: ${cardText}\n\n*Acumulado del día:*\nEfectivo: $${dayTotals.efectivo.toFixed(2)}\nYappy: $${dayTotals.yappy.toFixed(2)}${cardTotalText}`;
+    const whatsappMsg = `${duplicateText}*¡Nuevo Pedido!*\nUser: ${user.name}\n\n${itemsText}\n\n*Total: $${total.toFixed(2)}*${changeText}\nDelivery: ${deliveryText}\nYappy: ${yappyText}\nTarjeta: ${cardText}`;
     const whatsappLink = `https://wa.me/50767961550?text=${encodeURIComponent(whatsappMsg)}`;
 
     try {
@@ -451,12 +432,57 @@ const CevicheVenta = () => {
       }
   };
 
+  // Abrir Cierre de Caja: solo una vez al día y con aviso previo
+  const handleOpenClosing = async () => {
+    try {
+      if (await existsToday('daily_closing_reports', user.name)) {
+        setErrors('El cierre de caja de hoy ya fue enviado.');
+        return;
+      }
+      setErrors(null);
+      setShowClosingConfirm(true);
+    } catch (e) {
+      console.error(e);
+      setErrors('No se pudo verificar el cierre de caja. Intenta de nuevo.');
+    }
+  };
+
+  const handleConfirmOpenClosing = async () => {
+    try {
+      // Se registra la apertura para que, si recargan, el cierre vuelva a abrirse obligatoriamente
+      await addDoc(collection(db, 'closing_started'), {
+        user: user.name,
+        date: new Date().toDateString(),
+        timestamp: new Date()
+      });
+      setShowClosingConfirm(false);
+      setShowCloseRegisterModal(true);
+    } catch (e) {
+      console.error(e);
+      setShowClosingConfirm(false);
+      setErrors('No se pudo abrir el cierre de caja. Intenta de nuevo.');
+    }
+  };
+
   // Enviar Reporte Cierre de Caja
   const handleSendClosingReport = async () => {
      try {
+         if (closingRegisterReport.dinero === '' || isNaN(parseFloat(closingRegisterReport.dinero))) {
+             setClosingModalError("Ingresa el dinero en caja.");
+             return;
+         }
          const cashReported = parseFloat(closingRegisterReport.dinero);
-         if (isNaN(cashReported)) { setClosingModalError("Monto inválido"); return; }
-         const diff = cashReported - dailyTotals.efectivo;
+
+         // Evita enviar el cierre dos veces (doble clic)
+         if (await existsToday('daily_closing_reports', user.name)) {
+             setShowCloseRegisterModal(false);
+             setErrors('El cierre de caja de hoy ya fue enviado.');
+             return;
+         }
+
+         // Totales del sistema: solo se guardan para el resumen de Sandra, no se muestran ni se envían
+         const systemTotals = sumTotals(await fetchTodayOrders(user.name));
+         const diff = cashReported - systemTotals.efectivo;
 
          let inventoryText = "";
          // Generación de texto de inventario (reutilizada)
@@ -480,15 +506,16 @@ const CevicheVenta = () => {
              }
          }
 
-         // Mensaje Cierre (Incluye Tarjeta)
-         const msg = `*Cierre de Caja - ${user.name}*\nFecha: ${new Date().toLocaleDateString()}\n\n*DINERO:*\n- Sistema (Efectivo): $${dailyTotals.efectivo.toFixed(2)}\n- Sistema (Yappy): $${dailyTotals.yappy.toFixed(2)}\n- Sistema (Tarjeta): $${dailyTotals.tarjeta.toFixed(2)}\n----------------\n- En Caja (Efectivo Real): $${cashReported.toFixed(2)}\n- Diferencia Efectivo: $${diff.toFixed(2)}\n\n*INVENTARIO FINAL:*${inventoryText}`;
+         // Mensaje Cierre (sin totales del sistema; Sandra los ve en /resumen)
+         const msg = `*Cierre de Caja - ${user.name}*\nFecha: ${new Date().toLocaleDateString()}\n\n*DINERO:*\n- En Caja (Efectivo Real): $${cashReported.toFixed(2)}\n\n*INVENTARIO FINAL:*${inventoryText}`;
          const link = `https://wa.me/50767961550?text=${encodeURIComponent(msg)}`;
          
          await addDoc(collection(db, 'daily_closing_reports'), { 
              user: user.name, 
              date: new Date().toDateString(), 
              cashReported, 
-             systemTotals: dailyTotals, 
+             systemTotals,
+             difference: diff,
              finalInventory: inventoryDailyReport,
              timestamp: new Date() 
          });
@@ -536,9 +563,7 @@ const CevicheVenta = () => {
                 setInventoryDailyReport={setInventoryDailyReport} 
                 onSubmit={handleSendClosingReport} 
                 error={closingModalError} 
-                isClosingReport={true} 
-                dailyTotals={dailyTotals} 
-                closingRegisterReport={closingRegisterReport} 
+                isClosingReport={true}
                 setClosingRegisterReport={setClosingRegisterReport} 
              />;
   }
@@ -720,7 +745,7 @@ const CevicheVenta = () => {
             <button onClick={handleSendOrder} disabled={order.length === 0 || loading} className={`w-full py-3 rounded-xl font-bold text-white shadow-lg flex items-center justify-center gap-2 transition ${order.length === 0 ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'}`}>{loading ? 'Enviando...' : <><FaWhatsapp size={20}/> Confirmar Pedido</>}</button>
             
             <div className="grid grid-cols-2 gap-3 mt-2 pt-2 border-t">
-                <button onClick={() => setShowCloseRegisterModal(true)} className="flex items-center justify-center gap-2 py-2 text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg"><FaCashRegister /> Cierre Caja</button>
+                <button onClick={handleOpenClosing}className="flex items-center justify-center gap-2 py-2 text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg"><FaCashRegister /> Cierre Caja</button>
                 <button onClick={handleLogout} className="flex items-center justify-center gap-2 py-2 text-sm font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded-lg"><FaSignOutAlt /> Salir</button>
             </div>
             
@@ -728,24 +753,43 @@ const CevicheVenta = () => {
         </div>
       </div>
       
+      {/* Modal Aviso Cierre de Caja (una sola vez) */}
+      {showClosingConfirm && (
+        <div className="fixed inset-0 bg-black/50 z-[110] flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6">
+            <h3 className="text-lg font-bold text-red-600 mb-2">⚠️ Cierre de Caja</h3>
+            <p className="text-sm text-gray-600 mb-2">
+              El cierre de caja <b>solo se puede hacer una vez al día</b>.
+            </p>
+            <p className="text-sm text-gray-600 mb-4">
+              Una vez abierto ya no podrás seguir vendiendo hasta enviarlo, aunque recargues la página. Ten el dinero contado antes de continuar.
+            </p>
+            <div className="grid grid-cols-2 gap-3">
+              <button onClick={() => setShowClosingConfirm(false)} className="py-2 rounded-lg font-medium text-gray-700 bg-gray-100 hover:bg-gray-200">Cancelar</button>
+              <button onClick={handleConfirmOpenClosing} className="py-2 rounded-lg font-bold text-white bg-red-500 hover:bg-red-600">Abrir cierre</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Modal Aviso Pedido Repetido */}
       {duplicateWarning && (
         <div className="fixed inset-0 bg-black/50 z-[110] flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6">
             <h3 className="text-lg font-bold text-yellow-700 mb-2">⚠️ Posible pedido repetido</h3>
             <p className="text-sm text-gray-600 mb-3">
-              Ya se envió un pedido igual (${(parseFloat(duplicateWarning.duplicate.total) || 0).toFixed(2)}, {duplicateWarning.duplicate.paymentMethod || 'Efectivo'}) a las{' '}
-              {duplicateWarning.duplicate.timestamp?.toDate?.().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}.
+              Ya se envió un pedido igual (${(parseFloat(duplicateWarning.total) || 0).toFixed(2)}, {duplicateWarning.paymentMethod || 'Efectivo'}) a las{' '}
+              {duplicateWarning.timestamp?.toDate?.().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}.
               ¿Es un pedido nuevo?
             </p>
             <ul className="text-xs text-gray-500 mb-4 space-y-1">
-              {(duplicateWarning.duplicate.items || []).map((item, i) => (
+              {(duplicateWarning.items || []).map((item, i) => (
                 <li key={i}>• {item.quantity}x {item.cevicheName} ({item.size})</li>
               ))}
             </ul>
             <div className="grid grid-cols-2 gap-3">
               <button onClick={() => setDuplicateWarning(null)} className="py-2 rounded-lg font-medium text-gray-700 bg-gray-100 hover:bg-gray-200">Cancelar</button>
-              <button onClick={() => submitOrder(duplicateWarning.todayOrders, true)} className="py-2 rounded-lg font-bold text-white bg-yellow-500 hover:bg-yellow-600">Enviar igual</button>
+              <button onClick={() => submitOrder(true)} className="py-2 rounded-lg font-bold text-white bg-yellow-500 hover:bg-yellow-600">Enviar igual</button>
             </div>
           </div>
         </div>

@@ -12,6 +12,7 @@ import Menu from './components/Menu';
 import Venta from './components/CevicheVenta';
 import CevicheDetail from './components/CevicheDetail';
 import MetricasNegocio from './components/MetricasNegocio';
+import ResumenVentas from './components/ResumenVentas';
 
 const App = () => {
   const [user, setUser] = useState(null);
@@ -57,6 +58,7 @@ const App = () => {
         <Route path="/venta" element={<Venta />} />
         <Route path="/ceviche/:id" element={<CevicheDetail />} />
         <Route path="/metricas" element={<MetricasNegocio />} />
+        <Route path="/resumen" element={<ResumenVentas />} />
       </Routes>
       <Footer />
     </Router>
