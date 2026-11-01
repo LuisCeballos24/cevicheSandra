@@ -74,7 +74,8 @@ const CevicheVenta = () => {
   const [inventoryReportSent, setInventoryReportSent] = useState(false);
   const [inventoryModalError, setInventoryModalError] = useState(null);
   
-  // Cierre de Caja (los totales del sistema no se muestran a las vendedoras)
+  // Cierre de Caja (los totales del sistema solo se ven dentro del cierre)
+  const [dailyTotals, setDailyTotals] = useState({ efectivo: 0, yappy: 0, tarjeta: 0 });
   const [closingRegisterReport, setClosingRegisterReport] = useState({ dinero: '' });
   const [closingModalError, setClosingModalError] = useState(null);
   const [showClosingConfirm, setShowClosingConfirm] = useState(false);
@@ -178,6 +179,20 @@ const CevicheVenta = () => {
     };
     checkSessionAndInventory();
   }, []);
+
+  // C) Totales del sistema: solo se cargan con el cierre abierto (que se hace una sola vez al día)
+  useEffect(() => {
+    const fetchDailySales = async () => {
+      if (showCloseRegisterModal && user?.name) {
+        try {
+          setDailyTotals(sumTotals(await fetchTodayOrders(user.name)));
+        } catch (error) {
+          console.error("Error fetching sales:", error);
+        }
+      }
+    };
+    fetchDailySales();
+  }, [showCloseRegisterModal, user?.name]);
 
 
   // ==========================================
@@ -506,8 +521,8 @@ const CevicheVenta = () => {
              }
          }
 
-         // Mensaje Cierre (sin totales del sistema; Sandra los ve en /resumen)
-         const msg = `*Cierre de Caja - ${user.name}*\nFecha: ${new Date().toLocaleDateString()}\n\n*DINERO:*\n- En Caja (Efectivo Real): $${cashReported.toFixed(2)}\n\n*INVENTARIO FINAL:*${inventoryText}`;
+         // Mensaje Cierre (Incluye Tarjeta)
+         const msg = `*Cierre de Caja - ${user.name}*\nFecha: ${new Date().toLocaleDateString()}\n\n*DINERO:*\n- Sistema (Efectivo): $${systemTotals.efectivo.toFixed(2)}\n- Sistema (Yappy): $${systemTotals.yappy.toFixed(2)}\n- Sistema (Tarjeta): $${systemTotals.tarjeta.toFixed(2)}\n----------------\n- En Caja (Efectivo Real): $${cashReported.toFixed(2)}\n- Diferencia Efectivo: $${diff.toFixed(2)}\n\n*INVENTARIO FINAL:*${inventoryText}`;
          const link = `https://wa.me/50767961550?text=${encodeURIComponent(msg)}`;
          
          await addDoc(collection(db, 'daily_closing_reports'), { 
@@ -564,6 +579,7 @@ const CevicheVenta = () => {
                 onSubmit={handleSendClosingReport} 
                 error={closingModalError} 
                 isClosingReport={true}
+                dailyTotals={dailyTotals}
                 setClosingRegisterReport={setClosingRegisterReport} 
              />;
   }
@@ -762,7 +778,7 @@ const CevicheVenta = () => {
               El cierre de caja <b>solo se puede hacer una vez al día</b>.
             </p>
             <p className="text-sm text-gray-600 mb-4">
-              Una vez abierto ya no podrás seguir vendiendo hasta enviarlo, aunque recargues la página. Ten el dinero contado antes de continuar.
+              Al abrirlo verás los totales del día y ya no podrás seguir vendiendo hasta enviarlo, aunque recargues la página. Ten el dinero contado antes de continuar.
             </p>
             <div className="grid grid-cols-2 gap-3">
               <button onClick={() => setShowClosingConfirm(false)} className="py-2 rounded-lg font-medium text-gray-700 bg-gray-100 hover:bg-gray-200">Cancelar</button>

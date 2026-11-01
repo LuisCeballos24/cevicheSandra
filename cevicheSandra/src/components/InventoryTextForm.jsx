@@ -7,6 +7,7 @@ const InventoryTextForm = ({
   onSubmit,
   error,
   isClosingReport = false, // Nueva prop: true si es para cierre de caja
+  dailyTotals = { efectivo: 0, yappy: 0, tarjeta: 0 }, // Totales de venta del día
   setClosingRegisterReport = () => {}, // Función para actualizar el campo de dinero
 }) => {
 
@@ -126,7 +127,11 @@ const InventoryTextForm = ({
         {/* Sección Totales (Solo Cierre) */}
         {isClosingReport && (
           <div className="mb-6 p-4 bg-blue-100 rounded-lg border border-blue-200">
-            <div>
+            <h3 className="text-lg font-bold text-blue-800 mb-2">Totales del Día (Sistema):</h3>
+            <p className="text-blue-700 font-semibold">Efectivo: <span className="font-bold text-lg">${dailyTotals.efectivo.toFixed(2)}</span></p>
+            <p className="text-blue-700 font-semibold">Yappy: <span className="font-bold text-lg">${dailyTotals.yappy.toFixed(2)}</span></p>
+            <p className="text-blue-700 font-semibold">Tarjeta: <span className="font-bold text-lg">${dailyTotals.tarjeta.toFixed(2)}</span></p>
+            <div className="mt-4">
               <label htmlFor="dinero" className="block text-lg font-semibold mb-2 text-gray-800">
                 Dinero en Caja (físico):
               </label>
