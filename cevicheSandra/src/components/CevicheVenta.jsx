@@ -5,6 +5,51 @@ import Slider from 'react-slick';
 import InventoryTextForm from './InventoryTextForm';
 import { FaTrash, FaSignOutAlt, FaCashRegister, FaCheck, FaWhatsapp, FaTag, FaCreditCard } from 'react-icons/fa';
 
+// Minutos hacia atrás en los que un pedido idéntico se considera posible repetición
+const DUPLICATE_WINDOW_MINUTES = 10;
+
+// Pedidos del día de un usuario (filtrado por usuario en cliente para no requerir índice compuesto)
+const fetchTodayOrders = async (userName) => {
+  const today = new Date();
+  const startOfDay = Timestamp.fromDate(new Date(today.getFullYear(), today.getMonth(), today.getDate(), 0, 0, 0));
+  const endOfDay = Timestamp.fromDate(new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59, 999));
+  const q = query(
+    collection(db, "orders"),
+    where("timestamp", ">=", startOfDay),
+    where("timestamp", "<=", endOfDay)
+  );
+  const querySnapshot = await getDocs(q);
+  return querySnapshot.docs.map(d => d.data()).filter(o => o.user === userName);
+};
+
+// Clasificación de Venta por método de pago
+const sumTotals = (orders) => {
+  const totals = { efectivo: 0, yappy: 0, tarjeta: 0 };
+  orders.forEach(o => {
+    const monto = parseFloat(o.total) || 0;
+    if (o.paymentMethod === "Yappy") totals.yappy += monto;
+    else if (o.paymentMethod === "Tarjeta") totals.tarjeta += monto;
+    else totals.efectivo += monto;
+  });
+  return totals;
+};
+
+// Firma de los items (sin importar el orden) para comparar pedidos
+const itemsSignature = (items = []) =>
+  items.map(i => `${i.cevicheName}|${i.size}|${i.quantity}`).sort().join(';');
+
+// Busca un pedido idéntico enviado en los últimos minutos
+const findPossibleDuplicate = (orders, items, total) => {
+  const signature = itemsSignature(items);
+  const limit = Date.now() - DUPLICATE_WINDOW_MINUTES * 60 * 1000;
+  return orders.find(o => {
+    const time = o.timestamp?.toDate ? o.timestamp.toDate().getTime() : 0;
+    return time >= limit
+      && Math.abs((parseFloat(o.total) || 0) - total) < 0.01
+      && itemsSignature(o.items) === signature;
+  });
+};
+
 const CevicheVenta = () => {
   // ==========================================
   // 1. ESTADOS (STATES)
@@ -36,6 +81,7 @@ const CevicheVenta = () => {
   const [isDelivery, setIsDelivery] = useState(false);
   const [isYappy, setIsYappy] = useState(false);
   const [isCard, setIsCard] = useState(false); // <--- NUEVO ESTADO PARA TARJETA
+  const [cashReceived, setCashReceived] = useState(''); // Monto con el que paga el cliente (efectivo)
 
   // Inventario y Reportes
   const [inventoryDailyReport, setInventoryDailyReport] = useState({});
@@ -46,6 +92,9 @@ const CevicheVenta = () => {
   const [dailyTotals, setDailyTotals] = useState({ efectivo: 0, yappy: 0, tarjeta: 0 }); // <--- AGREGADO TARJETA
   const [closingRegisterReport, setClosingRegisterReport] = useState({ dinero: '' });
   const [closingModalError, setClosingModalError] = useState(null);
+
+  // Aviso de posible pedido repetido: { todayOrders, duplicate }
+  const [duplicateWarning, setDuplicateWarning] = useState(null);
 
   // Configuración Slider
   const settings = { dots: true, infinite: true, speed: 500, slidesToShow: 1, slidesToScroll: 1 };
@@ -146,41 +195,11 @@ const CevicheVenta = () => {
   useEffect(() => {
     const fetchDailySales = async () => {
       if (showCloseRegisterModal && user?.name) {
-        const today = new Date();
-        const startOfDay = Timestamp.fromDate(new Date(today.getFullYear(), today.getMonth(), today.getDate(), 0, 0, 0));
-        const endOfDay = Timestamp.fromDate(new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59, 999));
-        
         try {
-          const q = query(
-            collection(db, "orders"),
-            where("timestamp", ">=", startOfDay),
-            where("timestamp", "<=", endOfDay)
-          );
-          const querySnapshot = await getDocs(q);
-          
-          let totalEfectivo = 0;
-          let totalYappy = 0;
-          let totalTarjeta = 0; // Acumulador Tarjeta
-          
-          querySnapshot.forEach((doc) => {
-            const orderData = doc.data();
-            if (orderData.user !== user.name) return;
-            
-            const monto = parseFloat(orderData.total) || 0;
-            
-            // Clasificación de Venta
-            if (orderData.paymentMethod === "Yappy") {
-              totalYappy += monto;
-            } else if (orderData.paymentMethod === "Tarjeta") {
-              totalTarjeta += monto;
-            } else {
-              totalEfectivo += monto;
-            }
-          });
-          
-          setDailyTotals({ efectivo: totalEfectivo, yappy: totalYappy, tarjeta: totalTarjeta });
-          setClosingRegisterReport(prev => ({ ...prev, dinero: totalEfectivo.toFixed(2) }));
-          
+          const todayOrders = await fetchTodayOrders(user.name);
+          const totals = sumTotals(todayOrders);
+          setDailyTotals(totals);
+          setClosingRegisterReport(prev => ({ ...prev, dinero: totals.efectivo.toFixed(2) }));
         } catch (error) {
           console.error("Error fetching sales:", error);
         }
@@ -274,6 +293,40 @@ const CevicheVenta = () => {
       setErrors('El carrito está vacío.');
       return;
     }
+    const total = order.reduce((sum, item) => sum + item.subtotal, 0);
+
+    // Si paga en efectivo y anotó con cuánto paga, debe alcanzar para el total
+    const received = parseFloat(cashReceived);
+    if (!isYappy && !isCard && !isNaN(received) && received < total) {
+      setErrors(`El monto recibido ($${received.toFixed(2)}) es menor que el total ($${total.toFixed(2)}).`);
+      return;
+    }
+    setErrors(null);
+    setLoading(true);
+
+    let todayOrders = [];
+    try {
+      todayOrders = await fetchTodayOrders(user.name);
+    } catch (e) {
+      console.error("Error leyendo pedidos del día:", e);
+      setErrors('No se pudieron leer los pedidos del día. Intenta de nuevo.');
+      setLoading(false);
+      return;
+    }
+
+    // Avisar antes de mandar si parece un pedido repetido
+    const duplicate = findPossibleDuplicate(todayOrders, order, total);
+    if (duplicate) {
+      setDuplicateWarning({ todayOrders, duplicate });
+      setLoading(false);
+      return;
+    }
+
+    await submitOrder(todayOrders, false);
+  };
+
+  const submitOrder = async (todayOrders, isPossibleDuplicate) => {
+    setDuplicateWarning(null);
     setLoading(true);
 
     const total = order.reduce((sum, item) => sum + item.subtotal, 0);
@@ -298,8 +351,19 @@ const CevicheVenta = () => {
         return `• ${item.quantity}x ${item.cevicheName} (${item.size}) - $${item.subtotal.toFixed(2)}${promoText}`;
     }).join('\n');
     
+    // Acumulado del día incluyendo este pedido
+    const dayTotals = sumTotals([...todayOrders, { total, paymentMethod }]);
+    const cardTotalText = dayTotals.tarjeta > 0 ? `\nTarjeta: $${dayTotals.tarjeta.toFixed(2)}` : '';
+    const duplicateText = isPossibleDuplicate ? `⚠️ *POSIBLE PEDIDO REPETIDO* ⚠️\n` : '';
+
+    // Monto recibido y cambio (solo efectivo)
+    const received = parseFloat(cashReceived);
+    const hasCashReceived = paymentMethod === 'Efectivo' && !isNaN(received);
+    const change = hasCashReceived ? received - total : null;
+    const changeText = hasCashReceived ? `\nPaga con: $${received.toFixed(2)}\n*Cambio: $${change.toFixed(2)}*` : '';
+
     // Mensaje WhatsApp
-    const whatsappMsg = `*¡Nuevo Pedido!*\nUser: ${user.name}\n\n${itemsText}\n\n*Total: $${total.toFixed(2)}*\nDelivery: ${deliveryText}\nYappy: ${yappyText}\nTarjeta: ${cardText}`;
+    const whatsappMsg = `${duplicateText}*¡Nuevo Pedido!*\nUser: ${user.name}\n\n${itemsText}\n\n*Total: $${total.toFixed(2)}*${changeText}\nDelivery: ${deliveryText}\nYappy: ${yappyText}\nTarjeta: ${cardText}\n\n*Acumulado del día:*\nEfectivo: $${dayTotals.efectivo.toFixed(2)}\nYappy: $${dayTotals.yappy.toFixed(2)}${cardTotalText}`;
     const whatsappLink = `https://wa.me/50767961550?text=${encodeURIComponent(whatsappMsg)}`;
 
     try {
@@ -312,6 +376,9 @@ const CevicheVenta = () => {
         isCard, 
         paymentMethod,
         promotionsUsed: { promoCorvina, promo16oz },
+        possibleDuplicate: isPossibleDuplicate,
+        cashReceived: hasCashReceived ? received : null,
+        change,
         timestamp: new Date()
       });
 
@@ -322,6 +389,7 @@ const CevicheVenta = () => {
       setIsDelivery(false);
       setIsYappy(false);
       setIsCard(false);
+      setCashReceived('');
       setShowSuccessPopup(true);
       setTimeout(() => setShowSuccessPopup(false), 3000);
       
@@ -626,6 +694,28 @@ const CevicheVenta = () => {
             </div>
 
             <div className="flex justify-between items-end mb-2"><span className="text-gray-500 font-medium">Total a Pagar:</span><span className="text-2xl font-bold text-gray-800">${grandTotal.toFixed(2)}</span></div>
+
+            {/* Monto Recibido y Cambio (solo efectivo) */}
+            {!isYappy && !isCard && (
+                <div className="flex gap-2 items-center mb-2">
+                    <label className="text-sm text-gray-500 font-medium whitespace-nowrap">Paga con $</label>
+                    <input
+                        type="number"
+                        inputMode="decimal"
+                        min="0"
+                        step="0.01"
+                        placeholder="0.00"
+                        value={cashReceived}
+                        onChange={(e) => setCashReceived(e.target.value)}
+                        className="w-24 p-2 border border-gray-300 rounded-lg text-sm focus:border-orange-500 outline-none"
+                    />
+                    {cashReceived !== '' && !isNaN(parseFloat(cashReceived)) && (
+                        parseFloat(cashReceived) >= grandTotal
+                            ? <span className="ml-auto text-sm font-bold text-green-700">Cambio: ${(parseFloat(cashReceived) - grandTotal).toFixed(2)}</span>
+                            : <span className="ml-auto text-xs font-bold text-red-600">Faltan ${(grandTotal - parseFloat(cashReceived)).toFixed(2)}</span>
+                    )}
+                </div>
+            )}
             
             <button onClick={handleSendOrder} disabled={order.length === 0 || loading} className={`w-full py-3 rounded-xl font-bold text-white shadow-lg flex items-center justify-center gap-2 transition ${order.length === 0 ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'}`}>{loading ? 'Enviando...' : <><FaWhatsapp size={20}/> Confirmar Pedido</>}</button>
             
@@ -638,7 +728,30 @@ const CevicheVenta = () => {
         </div>
       </div>
       
-      {showSuccessPopup && <div className="fixed top-5 right-5 md:right-96 bg-green-500 text-white px-6 py-3 rounded-xl shadow-xl z-[100] animate-bounce">✅ Pedido enviado con éxito</div>}
+      {/* Modal Aviso Pedido Repetido */}
+      {duplicateWarning && (
+        <div className="fixed inset-0 bg-black/50 z-[110] flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6">
+            <h3 className="text-lg font-bold text-yellow-700 mb-2">⚠️ Posible pedido repetido</h3>
+            <p className="text-sm text-gray-600 mb-3">
+              Ya se envió un pedido igual (${(parseFloat(duplicateWarning.duplicate.total) || 0).toFixed(2)}, {duplicateWarning.duplicate.paymentMethod || 'Efectivo'}) a las{' '}
+              {duplicateWarning.duplicate.timestamp?.toDate?.().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}.
+              ¿Es un pedido nuevo?
+            </p>
+            <ul className="text-xs text-gray-500 mb-4 space-y-1">
+              {(duplicateWarning.duplicate.items || []).map((item, i) => (
+                <li key={i}>• {item.quantity}x {item.cevicheName} ({item.size})</li>
+              ))}
+            </ul>
+            <div className="grid grid-cols-2 gap-3">
+              <button onClick={() => setDuplicateWarning(null)} className="py-2 rounded-lg font-medium text-gray-700 bg-gray-100 hover:bg-gray-200">Cancelar</button>
+              <button onClick={() => submitOrder(duplicateWarning.todayOrders, true)} className="py-2 rounded-lg font-bold text-white bg-yellow-500 hover:bg-yellow-600">Enviar igual</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showSuccessPopup &&<div className="fixed top-5 right-5 md:right-96 bg-green-500 text-white px-6 py-3 rounded-xl shadow-xl z-[100] animate-bounce">✅ Pedido enviado con éxito</div>}
     </div>
   );
 };
