@@ -1,23 +1,13 @@
 import emailjs from 'emailjs-com';
 
-export const sendEmail = async ({ to, subject, body, attachment }) => {
-  const serviceID = 'service_g5payzo'; // Reemplaza con tu service ID
-  const templateID = 'template_z40xbbg'; // Reemplaza con tu template ID
-  const userID = '-pNylqk6yaRDlxkJP'; // Reemplaza con tu user ID
+// Credenciales de EmailJS (panel: https://dashboard.emailjs.com)
+const SERVICE_ID = 'service_g5payzo';
+const TEMPLATE_ID = 'template_z40xbbg';
+const PUBLIC_KEY = '-pNylqk6yaRDlxkJP';
 
-  const templateParams = {
-    to_email: to,
-    subject: subject,
-    message: body,
-    pdf: attachment
-  };
-  console.log(templateParams)
-  try {
-    const response = await emailjs.send(serviceID, templateID, templateParams, userID);
-    console.log('Email sent successfully:', response);
-    return response; // Devuelve la respuesta para manejo adicional si es necesario
-  } catch (error) {
-    console.error('Error sending email:', error);
-    throw new Error(`Failed to send email: ${error.message}`); // Propaga el error para manejarlo en el lugar de llamada
-  }
-};
+// Envía un correo con la plantilla de EmailJS. Parámetros de la plantilla: to_email, subject, message.
+// Se corta a los 8 segundos para no dejar al cliente esperando.
+export const sendEmail = ({ to, subject, body }) => Promise.race([
+  emailjs.send(SERVICE_ID, TEMPLATE_ID, { to_email: to, subject, message: body }, PUBLIC_KEY),
+  new Promise((_, reject) => setTimeout(() => reject(new Error('Tiempo de espera agotado')), 8000)),
+]);

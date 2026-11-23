@@ -29,7 +29,7 @@ const PageLoader = () => (
 
 // Meta de páginas sin componente propio de SEO (tienda e internas)
 const ROUTE_META = {
-  '/shop': { title: 'Ordenar en línea', description: 'Haz tu pedido de ceviches y cócteles en línea: elige tamaño, cantidad y si necesitas delivery.', path: '/shop' },
+  '/shop': { title: 'Ordenar en línea', description: 'Pide ceviches y cócteles en línea: elige tus favoritos, retiro en sucursal o delivery, y envía tu pedido por WhatsApp.', path: '/shop' },
   '/venta': { title: 'Ventas', noindex: true },
   '/resumen': { title: 'Resumen', noindex: true },
   '/metricas': { title: 'Métricas', noindex: true },

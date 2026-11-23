@@ -21,16 +21,20 @@ export const SITE = {
     facebook: '',
     tiktok: '',
   },
+  // Delivery: costo aproximado por km en línea recta desde la sucursal más cercana
+  deliveryCostPerKm: 1.5,
   locations: [
     {
       name: 'Altos de la Calzada',
       area: 'Distrito de Panamá, Panamá',
       mapsQuery: 'Ceviches y Cocteles Donde Sandra, Altos de la Calzada, Panamá',
+      coords: { lat: 9.147490, lng: -79.538451 },
     },
     {
       name: 'Praderas de San Lorenzo',
       area: 'Caimitillo, Panamá',
       mapsQuery: 'Praderas de San Lorenzo, Caimitillo, Panamá',
+      coords: { lat: 9.122934, lng: -79.536636 },
     },
   ],
 };

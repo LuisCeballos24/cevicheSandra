@@ -1,542 +1,365 @@
-import React, { useState, useEffect, useRef } from 'react';
-import MapComponent from './MapComponent';
-import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
-import { auth } from '../config/firebase'; // Asegúrate de importar correctamente tu configuración de Firebase
-import OrderSender from './OrderSender'; // Asegúrate de importar OrderSender correctamente
-import Slider from 'react-slick';
-import 'slick-carousel/slick/slick.css';
-import 'slick-carousel/slick/slick-theme.css';
-import { getMainImage } from '../hooks/useMenuData';
+import { useState, useEffect, useMemo } from 'react';
+import { Link } from 'react-router-dom';
+import { collection, addDoc } from 'firebase/firestore';
+import { FaWhatsapp, FaSearch, FaPlus, FaMinus, FaTrash, FaShoppingBag, FaTimes, FaStore, FaMotorcycle, FaLocationArrow, FaCheckCircle, FaChevronUp } from 'react-icons/fa';
+import { db } from '../config/firebase';
+import { SITE, whatsappLink } from '../config/siteConfig';
+import { useMenuData, MENU_CATEGORIES, getCategory, getMainImage, formatPrice, sizeLabel } from '../hooks/useMenuData';
+import { addItemToOrder, changeItemQuantity, orderTotal } from '../ventas/ventaHelpers';
+import { PageHero } from '../layout/SiteUi';
+import { estimateDelivery, buildWebOrderMessage, buildWebOrderEmail } from './orderUtils';
+import { sendEmail } from './EmailServices';
+
+const CART_KEY = 'webCart';
+const CUSTOMER_KEY = 'webCustomer';
+
+// localStorage puede fallar (modo privado); el carrito es solo una comodidad
+const readStorage = (key, fallback) => {
+  try { return JSON.parse(localStorage.getItem(key)) ?? fallback; } catch { return fallback; }
+};
+const writeStorage = (key, value) => {
+  try { localStorage.setItem(key, JSON.stringify(value)); } catch { /* sin almacenamiento */ }
+};
+
+const EMPTY_CUSTOMER = { name: '', phone: '', email: '', notes: '' };
 
 const CevicheOrden = () => {
-  const [selectedLocation, setSelectedLocation] = useState(null);
-  const [errors, setErrors] = useState(null);
-  const [cevichesData, setCevichesData] = useState([]);
-  const [order, setOrder] = useState([]);
-  const [selectedSizes, setSelectedSizes] = useState({});
-  const [quantities, setQuantities] = useState({});
-  const [requireDelivery, setRequireDelivery] = useState(false);
-  const [user, setUser] = useState(null);
-  const [showSuccessPopup, setShowSuccessPopup] = useState(false);
-  const [loading, setLoading] = useState(false); // Estado para manejar la carga
-  // Estado para manejar el modal
-  const [isModalOpen, setIsModalOpen] = React.useState(false);
-  const [modalContent, setModalContent] = useState({ name: '', size: '', quantity: 1 });
+  const { menu, loading: menuLoading } = useMenuData();
+  const [order, setOrder] = useState(() => readStorage(CART_KEY, []));
+  const [search, setSearch] = useState('');
+  const [category, setCategory] = useState('todos');
+  const [cartOpen, setCartOpen] = useState(false);
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
+  const [lastAdded, setLastAdded] = useState(null);
 
-  const orderSectionRef = useRef(null);
+  // Datos del cliente (se recuerdan para el próximo pedido, sin las notas)
+  const [customer, setCustomer] = useState(() => ({ ...EMPTY_CUSTOMER, ...readStorage(CUSTOMER_KEY, {}), notes: '' }));
+  const [delivery, setDelivery] = useState(false);
+  const [pickupLocation, setPickupLocation] = useState(SITE.locations[0].name);
+  const [point, setPoint] = useState(null);
+  const [address, setAddress] = useState('');
+  const [locating, setLocating] = useState(false);
+  const [formError, setFormError] = useState(null);
+  const [sending, setSending] = useState(false);
+  const [sentLink, setSentLink] = useState(null);
 
-  const Modal = ({ isOpen, closeModal, content }) => {
-    if (!isOpen) return null;
-  }// No mostrar si el modal no está abierto
+  useEffect(() => { writeStorage(CART_KEY, order); }, [order]);
 
-  const closeModal = () => {
-    // Resetea el mensaje de error al cerrar el modal
-    setErrors(null);
+  // Aviso breve al agregar un producto
+  useEffect(() => {
+    if (!lastAdded) return;
+    const t = setTimeout(() => setLastAdded(null), 1800);
+    return () => clearTimeout(t);
+  }, [lastAdded]);
 
-    // Cierra el modal de confirmación
-    setIsModalOpen(false);
+  const products = useMemo(() => {
+    const term = search.trim().toLowerCase();
+    return menu.filter(p =>
+      (category === 'todos' || getCategory(p.name) === category) &&
+      (!term || p.name.toLowerCase().includes(term))
+    );
+  }, [menu, search, category]);
 
-    // Si hay errores, no hacer el scroll
-    if (errors) {
-      console.log('Errors present, not scrolling');
-      return;
-    }
+  const inCartById = useMemo(() => order.reduce((acc, i) => {
+    acc[i.cevicheId] = (acc[i.cevicheId] || 0) + i.quantity;
+    return acc;
+  }, {}), [order]);
 
-    // Si no hay errores, realizar el scroll después de cerrar el modal
-    setTimeout(() => {
-      if (orderSectionRef.current) {
-        console.log('Scrolling to order section');
-        orderSectionRef.current.scrollIntoView({ behavior: 'smooth' });
-      } else {
-        console.log('Order section ref is not available');
-      }
-    }, 300); // Ajusta el tiempo según sea necesario
+  const total = orderTotal(order);
+  const itemCount = order.reduce((s, i) => s + i.quantity, 0);
+  const deliveryEstimate = delivery ? estimateDelivery(point) : null;
+
+  const handleAdd = (product, size) => {
+    setOrder(prev => addItemToOrder(prev, product, size, 1, {}));
+    setLastAdded(`${product.name}${size !== '1' ? ` ${sizeLabel(size)}` : ''}`);
   };
 
-  const handleSizeChange = (cevicheId, selectedSize, quantity) => {
-    if (!selectedSize || quantity <= 0) {
-      setErrors('Por favor selecciona un tamaño y una cantidad válidos.');
+  const handleChangeQuantity = (itemId, delta) => setOrder(prev => changeItemQuantity(prev, itemId, delta));
+
+  const handleUseLocation = () => {
+    if (!navigator.geolocation) {
+      setFormError('Tu navegador no permite obtener la ubicación. Escribe tu dirección.');
       return;
     }
-  
-    // Actualiza el tamaño seleccionado
-    setSelectedSizes(prevSizes => ({
-      ...prevSizes,
-      [cevicheId]: selectedSize
-    }));
-  
-    // Llama a handleAddToOrder para manejar la adición al pedido
-    handleAddToOrder(cevicheId, selectedSize, quantity);
+    setLocating(true);
+    setFormError(null);
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        setPoint({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+        setLocating(false);
+      },
+      err => {
+        setLocating(false);
+        setFormError(err.code === err.PERMISSION_DENIED
+          ? 'No diste permiso de ubicación. Escribe tu dirección o actívalo en el navegador.'
+          : 'No pudimos obtener tu ubicación. Escribe tu dirección.');
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+    );
   };
 
-  const settings = {
-    dots: true,
-    infinite: true,
-    speed: 500,
-    slidesToShow: 1,
-    slidesToScroll: 1,
-    autoplay: true,          // Activa la reproducción automática
-    autoplaySpeed: 3000
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (order.length === 0) return;
+    if (!customer.name.trim()) {
+      setFormError('Escribe tu nombre.');
+      return;
+    }
+    if (delivery && !point && !address.trim()) {
+      setFormError('Para delivery comparte tu ubicación o escribe tu dirección.');
+      return;
+    }
+    if (customer.email && !/^\S+@\S+\.\S+$/.test(customer.email)) {
+      setFormError('El correo no parece válido.');
+      return;
+    }
+    setFormError(null);
+    setSending(true);
+
+    const info = {
+      customer: { ...customer, name: customer.name.trim() },
+      order, total, delivery, pickupLocation, point, address: address.trim(), deliveryEstimate,
+    };
+    const link = whatsappLink(buildWebOrderMessage(info));
+    writeStorage(CUSTOMER_KEY, { name: info.customer.name, phone: customer.phone, email: customer.email });
+
+    // Registro del pedido y correo de confirmación: si fallan, el pedido igual sigue por WhatsApp
+    const tasks = [
+      addDoc(collection(db, 'web_orders'), {
+        customer: info.customer, items: order, total, delivery,
+        pickupLocation: delivery ? null : pickupLocation,
+        location: delivery ? point : null, address: info.address,
+        deliveryEstimate: deliveryEstimate ? deliveryEstimate.cost : null,
+        timestamp: new Date(),
+      }),
+    ];
+    if (customer.email) {
+      tasks.push(sendEmail({ to: customer.email, subject: `Tu pedido en ${SITE.name}`, body: buildWebOrderEmail(info) }));
+    }
+    const results = await Promise.allSettled(tasks);
+    results.filter(r => r.status === 'rejected').forEach(r => console.error('Pedido web:', r.reason));
+
+    setSending(false);
+    setOrder([]);
+    setSentLink(link);
+    window.location.href = link;
+  };
+
+  // Pantalla final: por si el navegador no abrió WhatsApp automáticamente
+  if (sentLink) {
+    return (
+      <div className="max-w-lg mx-auto px-4 py-20 text-center">
+        <FaCheckCircle className="mx-auto text-[#25D366]" size={64} />
+        <h1 className="text-3xl font-extrabold text-ocean mt-4">¡Pedido listo!</h1>
+        <p className="text-gray-600 mt-3">Te llevamos a WhatsApp con tu pedido escrito. Solo toca <b>Enviar</b> en el chat.</p>
+        <a href={sentLink} className="mt-8 inline-flex items-center gap-2 bg-[#25D366] text-white font-semibold px-7 py-3.5 rounded-full shadow-lg">
+          <FaWhatsapp size={20} /> Abrir WhatsApp
+        </a>
+        <div className="mt-6"><Link to="/" className="text-ocean font-semibold">Volver al inicio</Link></div>
+      </div>
+    );
   }
 
-  useEffect(() => {
-    const fetchCevichesData = async () => {
-      try {
-        const response = await fetch('/cevichesData.json');
-        if (!response.ok) throw new Error('Network response was not ok');
-        const data = await response.json();
-        setCevichesData(data);
-        setSelectedSizes(data.reduce((acc, ceviche) => {
-          acc[ceviche.id] = ''; // Inicializar con cadena vacía para permitir deselección
-          return acc;
-        }, {}));
-        setQuantities(data.reduce((acc, ceviche) => {
-          acc[ceviche.id] = 1; // Default quantity to 1
-          return acc;
-        }, {}));
-      } catch (error) {
-        console.error('Error fetching ceviches data:', error);
-      }
-    };
-
-    fetchCevichesData();
-  }, []);
-
-  useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged(setUser);
-    return () => unsubscribe(); // Cleanup subscription on unmount
-  }, []);
-
-  const handleAddToOrder = (cevicheId, selectedSize, selectedQuantity) => {
-    if (!selectedSize || !selectedQuantity) {
-      setErrors('Por favor selecciona TAMAÑO y CANTIDAD Correctos.');
-      return;
-    }
-
-    // Encuentra el ceviche agregado usando el ID
-    const ceviche = cevichesData.find((ceviche) => ceviche.id === cevicheId);
-    if (!ceviche) {
-      setErrors('Ceviche no encontrado.');
-      return;
-    }
-
-    // Obtén el precio basado en el tamaño seleccionado
-    const price = ceviche.prices[selectedSize];
-    if (!price) {
-      setErrors('Precio para el tamaño seleccionado no encontrado.');
-      return;
-    }
-
-    // Agrega el ceviche al pedido
-    setOrder((prevOrder) => [
-      ...prevOrder,
-      { cevicheId, size: selectedSize, quantity: selectedQuantity, price, image: ceviche.image },
-    ]);
-
-    // Configura el contenido del modal
-    setModalContent({
-      name: ceviche.name,
-      size: selectedSize,
-      quantity: selectedQuantity,
-      price: price * selectedQuantity, // Calcula el precio total
-      image: ceviche.image,
-    });
-
-    // Abre el modal
-    setIsModalOpen(true);
-
-    // Limpia errores después de agregar
-    setErrors(null);
-  };
-  
-  const handleRemoveFromOrder = (index) => {
-    // Crear una copia del array de pedidos
-    const updatedOrder = [...order];
-    // Eliminar el ítem en el índice dado
-    updatedOrder.splice(index, 1);
-    // Actualizar el estado con el nuevo array de pedidos
-    setOrder(updatedOrder);
-  };
-
-  const handleQuantityChange = (id, quantity) => {
-    // Si la cantidad es una cadena vacía, permite borrar el valor
-    if (quantity === '') {
-      setQuantities((prevQuantities) => ({
-        ...prevQuantities,
-        [id]: '', // Permite el valor vacío
-      }));
-    } else {
-      const parsedQuantity = parseInt(quantity, 10);
-  
-      // Asegúrate de que el valor sea un número entero no negativo
-      if (isNaN(parsedQuantity) || parsedQuantity < 0) {
-        setQuantities((prevQuantities) => ({
-          ...prevQuantities,
-          [id]: 1, // Reestablece a 1 si el valor es inválido
-        }));
-      } else {
-        setQuantities((prevQuantities) => ({
-          ...prevQuantities,
-          [id]: parsedQuantity, // Establece la cantidad a lo que el usuario escribió
-        }));
-      }
-    }
-  };
-  
-
-  const handleLogin = async () => {
-    const provider = new GoogleAuthProvider();
-    try {
-      const result = await signInWithPopup(auth, provider);
-      setUser(result.user);
-    } catch (error) {
-      console.error('Error signing in with Google', error);
-    }
-  };
-
-  const validateOrder = () => {
-    console.log('Selected Sizes:', selectedSizes);
-    console.log('Quantities:', quantities);
-
-    const selectedCeviches = Object.keys(selectedSizes).filter(id => {
-      const isSelected = selectedSizes[id];
-      const quantity = quantities[id] || 0; // Asegúrate de que `quantities[id]` es 0 si no existe
-      console.log(`ID: ${id}, Size Selected: ${isSelected}, Quantity: ${quantity}`);
-      return isSelected && quantity > 0;
-    });
-
-    console.log('Selected Ceviches:', selectedCeviches);
-
-    if (selectedCeviches.length === 0) {
-      return 'Debes seleccionar al menos un ceviche para continuar con el pedido.';
-    }
-
-    return null;
-  };
-
-
-  const handleSendOrder = async (loggedInUser) => {
-    const validationError = validateOrder();
-    if (validationError) {
-      setErrors(validationError);
-      return;
-    }
-
-    setLoading(true);
-
-    try {
-      // Filtrar ceviches seleccionados
-      const orderData = cevichesData
-        .map(ceviche => ({
-          name: ceviche.name,
-          size: selectedSizes[ceviche.id],
-          quantity: quantities[ceviche.id] || 0, // Asegúrate de que la cantidad sea 0 si no está definida
-          price: ceviche.prices[selectedSizes[ceviche.id]] || 0, // Añade el precio según el tamaño seleccionado
-        }))
-        .filter(item => item.size && item.quantity > 0); // Solo incluir ceviches con tamaño y cantidad seleccionados
-
-      console.log('Order Data:', orderData);
-
-      const customerDetails = {
-        name: loggedInUser.displayName,
-        email: loggedInUser.email
-      };
-
-      const customerLocation = requireDelivery
-        ? selectedLocation
-        : 'No Delivery';
-
-      await OrderSender(orderData, customerDetails, customerLocation, loggedInUser.email);
-      setShowSuccessPopup(true); // Mostrar ventana emergente de éxito
-    } catch (error) {
-      setErrors(`Error sending order: ${error.message}`);
-    } finally {
-      setLoading(false); // Asegúrate de que el loading se apague
-    }
-  };
-
-
-  const handleContinueOrder = () => {
-    if (user) {
-      handleSendOrder(user);
-    } else {
-      handleLogin();
-    }
-  };
-
-  const handleUseCurrentLocation = () => {
-    if (navigator.geolocation) {
-      console.log('Geolocalización soportada, intentando obtener la ubicación...');
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const { latitude, longitude } = position.coords;
-          setSelectedLocation({ lat: latitude, lng: longitude });
-          console.log('Ubicación actual detectada:', { lat: latitude, lng: longitude });
-        },
-        (error) => {
-          console.error('Error obteniendo ubicación actual:', error);
-          switch (error.code) {
-            case error.PERMISSION_DENIED:
-              alert('Permiso de geolocalización denegado. Por favor, permite el acceso a la ubicación.');
-              break;
-            case error.POSITION_UNAVAILABLE:
-              alert('La información de ubicación no está disponible.');
-              break;
-            case error.TIMEOUT:
-              alert('La solicitud para obtener la ubicación ha expirado. Inténtalo de nuevo.');
-              break;
-            default:
-              alert('Error desconocido al obtener la ubicación.');
-              break;
-          }
-        },
-        {
-          enableHighAccuracy: true, // Intenta obtener la ubicación con la mejor precisión
-          timeout: 5000, // Tiempo máximo en milisegundos para obtener la ubicación
-          maximumAge: 0 // No utilizar una ubicación previamente almacenada
-        }
-      );
-    } else {
-      console.error('Geolocalización no soportada por este navegador.');
-      alert('Geolocalización no soportada por este navegador.');
-    }
-  };
-
-
-  return (
-    <div className="max-w-6xl mx-auto px-4 py-8">
-      {/* Ventana emergente de éxito */}
-      {showSuccessPopup && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="bg-white p-6 rounded-lg shadow-lg">
-            <h2 className="text-2xl font-bold mb-4">¡Correo Enviado!</h2>
-            <p className="text-xl mb-4">¡Gracias por su compra, {user?.displayName}!</p>
-            <button
-              onClick={() => setShowSuccessPopup(false)}
-              className="bg-ocean text-white py-2 px-4 rounded-full"
-            >
-              Cerrar
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Mensaje de carga */}
-      {loading && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="bg-white p-6 rounded-lg shadow-lg">
-            <h2 className="text-xl font-bold mb-4">Procesando Pedido...</h2>
-            <p>Por favor, espera mientras procesamos tu pedido.</p>
-          </div>
-        </div>
-      )}
-
-      {/* Modal de confirmación de producto agregado */}
-      {isModalOpen && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-          <div className="bg-white p-6 rounded-lg shadow-lg max-w-sm w-full mx-4 text-center">
-            {/* Imagen del ceviche */}
-            {modalContent.image && (
-              <img
-                src={modalContent.image}
-                alt={modalContent.name}
-                className="w-24 h-24 object-cover rounded-lg mx-auto mb-4"
-              />
-            )}
-
-            <h3 className="text-lg font-bold mb-4">Producto Agregado Correctamente</h3>
-            <p className="text-gray-700 mb-2">
-              {modalContent.quantity} {modalContent.name}, {modalContent.size} agregado correctamente.
-            </p>
-            <p className="text-gray-900 font-semibold mb-2">
-              Precio: ${modalContent.price.toFixed(2)}
-            </p>
-            <p className="text-sm text-gray-500 mt-2">
-              Puedes ir a la parte de abajo para ver los detalles del pedido.
-            </p>
-            <button
-              onClick={closeModal}
-              className="mt-6 bg-red-200 hover:bg-red-300 text-gray-800 font-bold py-2 px-4 rounded-lg w-full"
-            >
-              Cerrar
-            </button>
-          </div>
-        </div>
-      )}
-
-      {errors && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-          <div className="bg-white p-6 rounded-lg shadow-lg max-w-sm w-full mx-4 text-center">
-            <h3 className="text-lg font-bold mb-4">Verifica tu Pedido</h3>
-            <p className="text-gray-700 mb-4">
-              {errors}
-            </p>
-            <button
-              onClick={closeModal}
-              className="mt-6 bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg w-full"
-            >
-              Cerrar
-            </button>
-          </div>
-        </div>
-      )}
-      <div className="flex flex-col md:flex-row justify-between mb-6">
-        <h1 className="text-3xl md:text-4xl font-extrabold text-ocean">Ordena en línea</h1>
+  const cartPanel = (
+    <div className="flex flex-col h-full">
+      <div className="p-4 flex items-center justify-between border-b border-sand-dark">
+        <h2 className="font-extrabold text-lg text-ocean flex items-center gap-2"><FaShoppingBag /> Tu pedido</h2>
+        <button onClick={() => setCartOpen(false)} className="lg:hidden text-gray-500 p-1" aria-label="Cerrar"><FaTimes /></button>
       </div>
-
-      <p className="mb-6 text-lg text-gray-600">Elige tamaño y cantidad de tus favoritos. Al final indica si necesitas entrega.</p>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {cevichesData.map((ceviche) => (
-          <div key={ceviche.id} className="bg-white border border-sand-dark shadow-sm p-5 rounded-2xl flex flex-col md:flex-row items-start">
-            <div className="w-full mb-4 sm:mb-0 sm:w-1/2 sm:mr-4">
-              {typeof ceviche.image === 'string' ? (
-                <img
-                  src={ceviche.image}
-                  alt={`${ceviche.name} image`}
-                  className="rounded-lg object-cover w-full h-auto"
-                />
-              ) : (
-                <Slider {...settings}>
-                  {Object.values(ceviche.image).map((imgSrc, index) => (
-                    <div key={index} className="w-full">
-                      <img
-                        src={imgSrc}
-                        alt={`${ceviche.name} image ${index + 1}`}
-                        className="rounded-lg object-cover w-full h-auto"
-                      />
-                    </div>
-                  ))}
-                </Slider>
-              )}
+      <div className="flex-1 overflow-y-auto p-4 space-y-3 min-h-[120px]">
+        {order.length === 0 ? (
+          <p className="text-center text-gray-400 py-10">Aún no agregas nada.<br />Toca un tamaño para agregar.</p>
+        ) : order.map(item => (
+          <div key={item.id} className="flex items-center gap-3">
+            <div className="min-w-0 flex-1">
+              <p className="font-semibold text-gray-800 text-sm truncate">{item.cevicheName}</p>
+              <p className="text-xs text-gray-500">{item.size !== '1' ? `${sizeLabel(item.size)} · ` : ''}{formatPrice(item.price)}</p>
             </div>
-            <div className="flex-1">
-              <div className="mb-4">
-                <h2 className="text-lg font-bold text-ocean mb-2">{ceviche.name}</h2> {/* Nombre del ceviche */}
-                <label htmlFor={`size-${ceviche.id}`} className="block text-lg font-medium mb-1">
-                  Tamaño:
-                </label>
-                <select
-                  id={`size-${ceviche.id}`}
-                  value={selectedSizes[ceviche.id] || ''}
-                  onChange={(e) => handleSizeChange(ceviche.id, e.target.value, quantities[ceviche.id] || 0)}
-                  className="border border-gray-300 p-2 rounded-lg w-full focus:border-coral outline-none"
-                >
-                  <option value="">Seleccione tamaño</option>
-                  {Object.keys(ceviche.prices).map((size) => (
-                    <option key={size} value={size}>
-                      {size}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="mb-4">
-                <label htmlFor={`quantity-${ceviche.id}`} className="block text-lg font-medium mb-1">
-                  Cantidad:
-                </label>
-                <input
-                  id={`quantity-${ceviche.id}`}
-                  type="number"
-                  value={quantities[ceviche.id] || ''}
-                  onChange={(e) => handleQuantityChange(ceviche.id, e.target.value)}
-                  className="border border-gray-300 p-2 rounded-lg w-full focus:border-coral outline-none"
-                />
-              </div>
+            <div className="flex items-center gap-1">
+              <button onClick={() => handleChangeQuantity(item.id, -1)} className="h-8 w-8 rounded-full bg-sand hover:bg-sand-dark flex items-center justify-center text-gray-600" aria-label="Menos">
+                {item.quantity === 1 ? <FaTrash size={11} className="text-red-500" /> : <FaMinus size={10} />}
+              </button>
+              <span className="w-6 text-center font-bold text-sm">{item.quantity}</span>
+              <button onClick={() => handleChangeQuantity(item.id, 1)} className="h-8 w-8 rounded-full bg-sand hover:bg-sand-dark flex items-center justify-center text-gray-600" aria-label="Más">
+                <FaPlus size={10} />
+              </button>
             </div>
+            <span className="w-16 text-right font-bold text-ocean text-sm">{formatPrice(item.subtotal)}</span>
           </div>
         ))}
       </div>
-      {/* Mostrar mensaje de error si existe */}
-      {errors && <p className="text-red-500 font-semibold">{errors}</p>}
-
-      {/* Modal para mostrar confirmación */}
-      <Modal isOpen={isModalOpen} closeModal={closeModal} content={modalContent} />
-
-      {/* Sección de Pedido Actual */}
-      <h2 className="text-2xl font-extrabold text-ocean mt-10 mb-4">Tu pedido</h2>
-      {order.length === 0 ? (
-        <p className="text-lg font-semibold">No hay items en el pedido</p>
-      ) : (
-        <div ref={orderSectionRef} className="space-y-4">
-          <ul className="divide-y divide-gray-300">
-            {order.map((item, index) => {
-              const ceviche = cevichesData.find((ceviche) => ceviche.id === item.cevicheId);
-              if (!ceviche) return null; // Asegúrate de que el ceviche existe
-
-              const pricePerUnit = ceviche.prices[item.size]; // Precio por unidad
-              const totalItemPrice = pricePerUnit * item.quantity; // Precio total del ítem
-
-              return (
-                <li
-                  key={index}
-                  className="bg-white border border-sand-dark p-4 rounded-2xl flex flex-col md:flex-row items-start justify-between shadow-sm"
-                >
-                  {/* Imagen del Ceviche */}
-                  <div className="flex-shrink-0 mb-4 md:mb-0">
-                    <img
-                      src={getMainImage(ceviche.image)} // Imagen del ceviche
-                      alt={ceviche.name}
-                      className="w-24 h-24 object-cover rounded-full shadow-lg"
-                    />
-                  </div>
-                  {/* Detalles del Pedido */}
-                  <div className="flex-grow md:ml-4">
-                    <h3 className="text-lg font-bold text-gray-800 mb-1">{ceviche.name}</h3>
-                    <p className="text-sm font-medium text-gray-700">Tamaño: {item.size} - Cantidad: {item.quantity}</p>
-                    <p className="text-sm font-semibold text-gray-900 mt-1">Precio: ${totalItemPrice.toFixed(2)}</p>
-                  </div>
-                  {/* Botón de Eliminar */}
-                  <button
-                    onClick={() => handleRemoveFromOrder(index)}
-                    className="mt-4 md:mt-0 bg-red-50 hover:bg-red-100 text-red-600 font-semibold py-2 px-4 rounded-full"
-                  >
-                    Eliminar
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
+      <div className="p-4 border-t border-sand-dark">
+        <div className="flex justify-between items-end mb-3">
+          <span className="text-gray-500">Total</span>
+          <span className="text-2xl font-extrabold text-ocean">{formatPrice(total)}</span>
         </div>
-      )}
-
-<div className="flex flex-col md:flex-row items-center mt-6 space-y-4 md:space-y-0 md:space-x-4">
-<div className="flex items-center">
-    <input
-      type="checkbox"
-      checked={requireDelivery}
-      onChange={(e) => setRequireDelivery(e.target.checked)}
-      className="mr-2"
-    />
-    <label className="text-gray-700">¿Requieres entrega?</label>
-  </div>
-
-  {requireDelivery && (
-    <div className="flex flex-col items-center md:items-start w-full md:w-auto mt-4">
-      <button
-        onClick={handleUseCurrentLocation}
-        className="bg-ocean hover:bg-ocean-dark text-white font-semibold py-2 px-5 rounded-full w-full md:w-auto"
-      >
-        Usar Ubicación Actual
-      </button>
-      <div className="mt-4 w-full">
-        <p className="text-xl font-bold text-center md:text-left">Selecciona tu ubicación:</p>
-        <MapComponent
-          selectedLocation={selectedLocation}
-          handleMapClick={(location) => setSelectedLocation(location)}
-        />
-      </div>
-    </div>
-  )}
-</div>
-      <div className="mt-6 w-full flex flex-col items-center md:items-start">
-        {errors && <p className="text-red-500 mb-4 text-center md:text-left">{errors}</p>}
         <button
-          onClick={handleContinueOrder}
-          className="bg-coral hover:bg-coral-dark text-white font-semibold py-3 px-8 rounded-full shadow-lg w-full md:w-auto"
+          onClick={() => { setCartOpen(false); setCheckoutOpen(true); }}
+          disabled={order.length === 0}
+          className="w-full py-3.5 rounded-full font-bold text-white bg-coral hover:bg-coral-dark disabled:bg-gray-300 disabled:cursor-not-allowed shadow-lg transition"
         >
-          {user ? 'Finalizar Pedido' : 'Iniciar Sesión'}
+          Continuar
         </button>
       </div>
     </div>
+  );
+
+  return (
+    <>
+      <PageHero eyebrow="Fácil y rápido" title="Ordena en línea" subtitle="Elige tus favoritos, dinos cómo lo quieres y envía el pedido por WhatsApp." />
+
+      <div className="max-w-6xl mx-auto px-4 py-8 lg:grid lg:grid-cols-[1fr_340px] lg:gap-8 pb-32 lg:pb-12">
+        {/* PRODUCTOS */}
+        <div>
+          <div className="sticky top-16 md:top-20 z-20 bg-sand/95 backdrop-blur py-3 -mx-4 px-4 space-y-3">
+            <div className="relative">
+              <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
+              <input type="search" placeholder="Buscar ceviche, cóctel o extra..." value={search} onChange={e => setSearch(e.target.value)}
+                className="w-full pl-10 pr-4 py-3 rounded-full bg-white shadow-sm outline-none focus:ring-2 focus:ring-coral/40" />
+            </div>
+            <div className="flex gap-2 overflow-x-auto pb-1">
+              {MENU_CATEGORIES.map(c => (
+                <button key={c.key} onClick={() => setCategory(c.key)}
+                  className={`px-5 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition shadow-sm ${category === c.key ? 'bg-coral text-white' : 'bg-white text-gray-700 hover:text-coral'}`}>
+                  {c.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {menuLoading ? (
+            <div className="grid gap-4 sm:grid-cols-2 mt-4">{Array.from({ length: 6 }).map((_, i) => <div key={i} className="h-36 rounded-3xl bg-sand-dark animate-pulse" />)}</div>
+          ) : products.length === 0 ? (
+            <p className="text-center text-gray-500 py-16">No encontramos productos con esa búsqueda.</p>
+          ) : (
+            <div className="grid gap-4 sm:grid-cols-2 mt-4">
+              {products.map(p => {
+                const inCart = inCartById[p.id] || 0;
+                return (
+                  <div key={p.id} className={`bg-white rounded-3xl overflow-hidden shadow-sm flex transition ${inCart ? 'ring-2 ring-coral' : ''}`}>
+                    <div className="relative w-28 sm:w-32 shrink-0 bg-sand-dark">
+                      <img src={getMainImage(p.image)} alt={p.name} loading="lazy" decoding="async" className="w-full h-full object-cover" />
+                      {inCart > 0 && <span className="absolute top-2 left-2 h-7 min-w-7 px-2 rounded-full bg-coral text-white text-xs font-bold flex items-center justify-center shadow">{inCart}</span>}
+                    </div>
+                    <div className="p-4 flex-1 min-w-0">
+                      <h3 className="font-bold text-ocean leading-tight">{p.name}</h3>
+                      <div className="flex flex-wrap gap-1.5 mt-3">
+                        {Object.entries(p.prices).map(([size, price]) => (
+                          <button key={size} onClick={() => handleAdd(p, size)}
+                            className="px-3 py-1.5 rounded-full text-xs font-semibold bg-coral-light text-coral-dark hover:bg-coral hover:text-white active:scale-95 transition">
+                            {size === '1' ? 'Agregar' : sizeLabel(size)} · {formatPrice(price)}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* CARRITO (escritorio) */}
+        <aside className="hidden lg:block">
+          <div className="sticky top-24 bg-white rounded-3xl shadow-lg overflow-hidden max-h-[calc(100vh-7rem)]">{cartPanel}</div>
+        </aside>
+      </div>
+
+      {/* BARRA INFERIOR (móvil) */}
+      {itemCount > 0 && !cartOpen && !checkoutOpen && (
+        <button onClick={() => setCartOpen(true)}
+          className="lg:hidden fixed bottom-4 left-4 right-20 z-40 bg-coral text-white rounded-full shadow-2xl px-5 py-4 flex items-center justify-between font-bold">
+          <span className="flex items-center gap-2"><span className="bg-white/25 rounded-full h-7 min-w-7 px-2 flex items-center justify-center text-sm">{itemCount}</span> Ver pedido</span>
+          <span className="flex items-center gap-2">{formatPrice(total)} <FaChevronUp /></span>
+        </button>
+      )}
+
+      {/* CARRITO (móvil) */}
+      {cartOpen && (
+        <div className="lg:hidden fixed inset-0 z-50 flex items-end">
+          <div className="absolute inset-0 bg-black/40" onClick={() => setCartOpen(false)} />
+          <div className="relative bg-white w-full rounded-t-3xl max-h-[85vh] flex flex-col">{cartPanel}</div>
+        </div>
+      )}
+
+      {/* AVISO AL AGREGAR */}
+      {lastAdded && (
+        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 bg-ocean text-white text-sm font-semibold px-5 py-3 rounded-full shadow-xl flex items-center gap-2">
+          <FaCheckCircle className="text-[#25D366]" /> {lastAdded} agregado
+        </div>
+      )}
+
+      {/* DATOS DEL PEDIDO */}
+      {checkoutOpen && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+          <div className="absolute inset-0 bg-black/50" onClick={() => !sending && setCheckoutOpen(false)} />
+          <form onSubmit={handleSubmit} className="relative bg-white w-full sm:max-w-lg rounded-t-3xl sm:rounded-3xl max-h-[92vh] overflow-y-auto p-6">
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="text-2xl font-extrabold text-ocean">Casi listo</h2>
+              <button type="button" onClick={() => setCheckoutOpen(false)} className="text-gray-500 p-1" aria-label="Cerrar"><FaTimes /></button>
+            </div>
+
+            {/* Entrega */}
+            <div className="grid grid-cols-2 gap-2 mb-4">
+              <button type="button" onClick={() => setDelivery(false)}
+                className={`flex items-center justify-center gap-2 py-3 rounded-2xl font-semibold border-2 transition ${!delivery ? 'border-coral bg-coral-light text-coral-dark' : 'border-sand-dark text-gray-600'}`}>
+                <FaStore /> Retiro
+              </button>
+              <button type="button" onClick={() => setDelivery(true)}
+                className={`flex items-center justify-center gap-2 py-3 rounded-2xl font-semibold border-2 transition ${delivery ? 'border-coral bg-coral-light text-coral-dark' : 'border-sand-dark text-gray-600'}`}>
+                <FaMotorcycle /> Delivery
+              </button>
+            </div>
+
+            {!delivery ? (
+              <label className="block mb-4">
+                <span className="text-sm font-semibold text-gray-700">¿En qué sucursal lo retiras?</span>
+                <select value={pickupLocation} onChange={e => setPickupLocation(e.target.value)} className="mt-1 w-full p-3 rounded-xl border border-sand-dark bg-white outline-none focus:border-coral">
+                  {SITE.locations.map(l => <option key={l.name} value={l.name}>{l.name}</option>)}
+                </select>
+              </label>
+            ) : (
+              <div className="mb-4 space-y-2">
+                <button type="button" onClick={handleUseLocation} disabled={locating}
+                  className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl font-semibold transition ${point ? 'bg-green-50 text-green-700 border border-green-300' : 'bg-ocean text-white hover:bg-ocean-dark'}`}>
+                  {point ? <><FaCheckCircle /> Ubicación compartida</> : <><FaLocationArrow /> {locating ? 'Obteniendo ubicación...' : 'Usar mi ubicación actual'}</>}
+                </button>
+                <input type="text" placeholder="Dirección o referencia (casa, edificio, punto de referencia)" value={address} onChange={e => setAddress(e.target.value)}
+                  className="w-full p-3 rounded-xl border border-sand-dark outline-none focus:border-coral" />
+                {deliveryEstimate && (
+                  <p className="text-sm text-gray-600">Delivery aprox.: <b>{formatPrice(deliveryEstimate.cost)}</b> desde {deliveryEstimate.location.name}. Te lo confirmamos por WhatsApp.</p>
+                )}
+              </div>
+            )}
+
+            {/* Cliente */}
+            <div className="space-y-3">
+              <input type="text" required placeholder="Tu nombre *" autoComplete="name" value={customer.name} onChange={e => setCustomer({ ...customer, name: e.target.value })}
+                className="w-full p-3 rounded-xl border border-sand-dark outline-none focus:border-coral" />
+              <input type="tel" placeholder="Teléfono (opcional)" autoComplete="tel" value={customer.phone} onChange={e => setCustomer({ ...customer, phone: e.target.value })}
+                className="w-full p-3 rounded-xl border border-sand-dark outline-none focus:border-coral" />
+              <input type="email" placeholder="Correo para recibir confirmación (opcional)" autoComplete="email" value={customer.email} onChange={e => setCustomer({ ...customer, email: e.target.value })}
+                className="w-full p-3 rounded-xl border border-sand-dark outline-none focus:border-coral" />
+              <textarea rows={2} placeholder="Notas: sin cebolla, más picante, hora de retiro..." value={customer.notes} onChange={e => setCustomer({ ...customer, notes: e.target.value })}
+                className="w-full p-3 rounded-xl border border-sand-dark outline-none focus:border-coral resize-none" />
+            </div>
+
+            <div className="mt-5 bg-sand rounded-2xl p-4 text-sm">
+              <div className="flex justify-between"><span className="text-gray-600">{itemCount} {itemCount === 1 ? 'producto' : 'productos'}</span><span className="font-bold">{formatPrice(total)}</span></div>
+              {deliveryEstimate && <div className="flex justify-between mt-1"><span className="text-gray-600">Delivery aprox.</span><span>{formatPrice(deliveryEstimate.cost)}</span></div>}
+            </div>
+
+            {formError && <p className="text-red-600 text-sm mt-3">{formError}</p>}
+
+            <button type="submit" disabled={sending}
+              className="mt-5 w-full flex items-center justify-center gap-2 bg-[#25D366] hover:bg-[#1ebe5b] disabled:opacity-70 text-white font-bold py-4 rounded-full shadow-lg transition">
+              <FaWhatsapp size={22} /> {sending ? 'Preparando pedido...' : 'Enviar pedido por WhatsApp'}
+            </button>
+            <p className="text-xs text-gray-500 text-center mt-3">Se abrirá WhatsApp con tu pedido escrito. Solo toca enviar.</p>
+          </form>
+        </div>
+      )}
+    </>
   );
 };
 

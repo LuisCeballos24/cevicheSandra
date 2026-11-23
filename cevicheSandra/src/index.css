@@ -50,7 +50,3 @@ body {
   .animate-marquee, .animate-float { animation: none !important; }
 }
 
-/* Las flechas/puntos del carrusel en tono del sitio */
-.slick-dots li button:before {
-  color: #0f4c5c;
-}
