@@ -31,11 +31,11 @@ const About = () => {
 
   return (
     <>
-      <PageHero title="Sobre nosotros" subtitle={`Cevichería panameña desde ${SITE.since}.`} />
+      <PageHero eyebrow="Nuestra historia" title="Sobre nosotros" subtitle={`Cevichería panameña desde ${SITE.since}.`} />
 
       <div className="max-w-6xl mx-auto px-4 py-12">
         <div className="grid gap-10 md:grid-cols-2 items-center mb-16">
-          <img src="/img/ejemploPedido2.webp" alt={`Pedido de ${SITE.name}`} loading="lazy" className="rounded-3xl shadow-xl w-full aspect-[4/3] object-cover" />
+          <img src="/img/ejemploPedido2.webp" alt={`Pedido de ${SITE.name}`} loading="lazy" className="rounded-[2rem] shadow-2xl w-full aspect-[4/3] object-cover rotate-[-2deg] ring-8 ring-white" />
           <div>
             <h2 className="text-2xl md:text-3xl font-extrabold text-ocean">Hecho con cariño, servido fresco</h2>
             <p className="text-gray-600 mt-4 leading-relaxed">

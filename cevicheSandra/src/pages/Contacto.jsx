@@ -12,7 +12,7 @@ const Contacto = () => {
 
   return (
     <>
-      <PageHero title="Contáctanos" subtitle="Escríbenos para pedidos, eventos o pedidos grandes por galón." />
+      <PageHero eyebrow="¡Hablemos!" title="Contáctanos" subtitle="Escríbenos para pedidos, eventos o pedidos grandes por galón." />
 
       <div className="max-w-6xl mx-auto px-4 py-12">
         <div className="grid gap-4 md:grid-cols-3 mb-16">

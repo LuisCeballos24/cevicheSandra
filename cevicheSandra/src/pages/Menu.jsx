@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { SITE } from '../config/siteConfig';
 import { usePageMeta } from '../hooks/usePageMeta';
 import { useMenuData, MENU_CATEGORIES, getCategory, getMainImage, formatPrice, sizeLabel } from '../hooks/useMenuData';
-import { PageHero, WhatsAppButton } from '../layout/SiteUi';
+import { PageHero, WhatsAppButton, Reveal } from '../layout/SiteUi';
 
 const Menu = () => {
   usePageMeta({
@@ -21,7 +21,7 @@ const Menu = () => {
 
   return (
     <>
-      <PageHero title="Menú y precios" subtitle="Ceviches y cócteles preparados con mariscos frescos. Toca un producto para ver su historia y fotos." />
+      <PageHero eyebrow="Nuestro menú" title="Menú y precios" subtitle="Ceviches y cócteles preparados con mariscos frescos. Toca un producto para ver su historia y fotos." />
 
       <div className="max-w-6xl mx-auto px-4 py-10">
         <div className="flex flex-wrap justify-center gap-2 mb-8">
@@ -29,7 +29,7 @@ const Menu = () => {
             <button
               key={c.key}
               onClick={() => setCategory(c.key)}
-              className={`px-5 py-2 rounded-full text-sm font-semibold border transition ${category === c.key ? 'bg-ocean text-white border-ocean' : 'bg-white text-gray-700 border-sand-dark hover:border-ocean'}`}
+              className={`px-6 py-2.5 rounded-full text-sm font-semibold transition shadow-sm ${category === c.key ? 'bg-coral text-white shadow-coral/30 shadow-lg' : 'bg-white text-gray-700 hover:text-coral'}`}
             >
               {c.label}
             </button>
@@ -41,10 +41,11 @@ const Menu = () => {
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {loading
             ? Array.from({ length: 6 }).map((_, i) => <div key={i} className="h-80 rounded-2xl bg-sand-dark animate-pulse" />)
-            : products.map(p => (
-              <article key={p.id} className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition border border-sand-dark flex flex-col">
+            : products.map((p, i) => (
+              <Reveal key={p.id} delay={(i % 3) * 80}>
+              <article className="group bg-white rounded-3xl overflow-hidden shadow-sm hover:shadow-2xl hover:-translate-y-1 transition duration-300 flex flex-col h-full">
                 <Link to={`/ceviche/${p.id}`} className="block aspect-[4/3] overflow-hidden bg-sand-dark">
-                  <img src={getMainImage(p.image)} alt={`${p.name} - ${SITE.name}`} loading="lazy" decoding="async" className="w-full h-full object-cover hover:scale-105 transition duration-500" />
+                  <img src={getMainImage(p.image)} alt={`${p.name} - ${SITE.name}`} loading="lazy" decoding="async" className="w-full h-full object-cover group-hover:scale-110 transition duration-700" />
                 </Link>
                 <div className="p-5 flex-1 flex flex-col">
                   <h2 className="font-bold text-lg text-ocean">
@@ -61,6 +62,7 @@ const Menu = () => {
                   <Link to={`/ceviche/${p.id}`} className="mt-4 text-sm font-semibold text-coral hover:text-coral-dark">Ver detalle →</Link>
                 </div>
               </article>
+              </Reveal>
             ))}
         </div>
 

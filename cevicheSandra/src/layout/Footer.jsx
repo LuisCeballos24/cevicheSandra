@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { FaFacebookF, FaInstagram, FaTiktok, FaMapMarkerAlt, FaWhatsapp, FaEnvelope, FaGoogle, FaStar } from 'react-icons/fa';
 import { SITE, whatsappLink, mapsDirectionsLink } from '../config/siteConfig';
+import { Wave } from './SiteUi';
 
 const logo = '/img/logo.webp';
 
@@ -10,7 +11,9 @@ const Footer = () => {
   const socials = Object.entries(SITE.social).filter(([, url]) => url);
 
   return (
-    <footer className="bg-ocean-dark text-white/80 mt-16">
+    <footer className="text-white/80 mt-16">
+      <Wave fill="#0a3540" className="-mb-px" />
+      <div className="bg-ocean-dark">
       <div className="max-w-6xl mx-auto px-4 py-12 grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
         <div>
           <img src={logo} alt={`Logo ${SITE.name}`} width="80" height="80" loading="lazy" className="h-20 w-20 object-contain mb-3" />
@@ -88,6 +91,7 @@ const Footer = () => {
       </div>
       <div className="border-t border-white/10 py-5 text-center text-xs text-white/60">
         &copy; {new Date().getFullYear()} {SITE.name}. Todos los derechos reservados.
+      </div>
       </div>
     </footer>
   );

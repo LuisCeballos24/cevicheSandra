@@ -33,6 +33,23 @@ body {
   }
 }
 
+/* Aparición suave al hacer scroll (ver hooks/useReveal) */
+.reveal {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.7s ease, transform 0.7s ease;
+}
+.reveal.is-visible {
+  opacity: 1;
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .reveal { opacity: 1; transform: none; transition: none; }
+  .animate-marquee, .animate-float { animation: none !important; }
+}
+
 /* Las flechas/puntos del carrusel en tono del sitio */
 .slick-dots li button:before {
   color: #0f4c5c;
