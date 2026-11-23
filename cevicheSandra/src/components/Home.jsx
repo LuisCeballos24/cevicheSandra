@@ -49,28 +49,28 @@ const Home = ({ isAuthenticated, user, onLogin, onLogout }) => {
           <Slider {...settings} className="w-full max-w-full">
           <div className="flex justify-center items-center w-full h-[300px] md:h-[400px]">
               <img
-                src="/ejemploPedido.png"
+                src="/img/ejemploPedido.webp"
                 alt="Slide 1"
                 className="object-cover w-full h-full rounded-lg shadow-lg" // Cambiado a object-cover
               />
             </div>
             <div className="flex justify-center items-center w-full h-[300px] md:h-[400px]">
               <img
-                src="/cevicheConchaNegra.png"
+                src="/img/cevicheConchaNegra.webp"
                 alt="Slide 2"
                 className="object-cover w-full h-full rounded-lg shadow-lg" // Cambiado a object-cover
               />
             </div>
             <div className="flex justify-center items-center w-full h-[300px] md:h-[400px]">
               <img
-                src="/ejemploPedido2.png"
+                src="/img/ejemploPedido2.webp"
                 alt="Slide 3"
                 className="object-cover w-full h-full rounded-lg shadow-lg" // Cambiado a object-cover
               />
             </div>
             <div className="flex justify-center items-center w-full h-[300px] md:h-[400px]">
               <img
-                src="/coctelTropical.png"
+                src="/img/coctelTropical.webp"
                 alt="Slide 4"
                 className="object-cover w-full h-full rounded-lg shadow-lg" // Cambiado a object-cover
               />

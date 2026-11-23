@@ -173,7 +173,7 @@ const ResumenVentas = () => {
                       <table className="w-full text-sm text-center">
                         <thead>
                           <tr className="text-[11px] text-gray-500 uppercase">
-                            <th className="text-left p-1">Envase</th><th className="p-1">Abrió</th><th className="p-1">Cerró</th><th className="p-1">Usados</th><th className="p-1">Reportados</th><th className="p-1">Cuadre</th>
+                            <th className="text-left p-1">Envase</th><th className="p-1">Abrió</th><th className="p-1">Recibió</th><th className="p-1">Cerró</th><th className="p-1">Usados</th><th className="p-1">Reportados</th><th className="p-1">Cuadre</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -181,6 +181,7 @@ const ResumenVentas = () => {
                             <tr key={c.label} className="border-t border-gray-100">
                               <td className="text-left p-1 font-bold">{c.label}</td>
                               <td className="p-1">{c.apertura ?? '-'}</td>
+                              <td className="p-1">{c.recibidos ?? 0}</td>
                               <td className="p-1">{c.cierre ?? '-'}</td>
                               <td className="p-1">{c.usados ?? '-'}</td>
                               <td className="p-1">{c.vendidos}</td>

@@ -44,11 +44,11 @@ const CevicheDetail = () => {
   ));
 
   const sizeImages = {
-    '7oz': '/VasoTrasparente7oz.png',
-    '16oz': '/VasoIcopor16oz.png',
-    '24oz': '/VasoIcopor24oz.png',
-    'medio galon': '/medioGalon.png',
-    'galon': '/Galon.png'
+    '7oz': '/img/VasoTrasparente7oz.webp',
+    '16oz': '/img/VasoIcopor16oz.webp',
+    '24oz': '/img/VasoIcopor24oz.webp',
+    'medio galon': '/img/medioGalon.webp',
+    'galon': '/img/Galon.webp'
   };
 
   const closeModal = () => setIsModalOpen(false);

@@ -30,21 +30,40 @@ export const CONTAINERS = [
   { key: 'vasos7oz', size: '7oz', label: '7oz' },
 ];
 
-// Cuadre de envases: (apertura - cierre) = usados, comparado con lo vendido en el sistema.
+// Suma los envases recibidos durante el día (documentos de 'container_receipts')
+export const sumReceipts = (receipts = []) =>
+  Object.fromEntries(CONTAINERS.map(({ key }) => [
+    key,
+    receipts.reduce((sum, r) => sum + (parseInt(r[key]) || 0), 0),
+  ]));
+
+// Envases recibidos hoy por un usuario
+export const fetchTodayReceipts = async (userName) => {
+  const q = query(
+    collection(db, 'container_receipts'),
+    where('user', '==', userName),
+    where('date', '==', new Date().toDateString())
+  );
+  const querySnapshot = await getDocs(q);
+  return querySnapshot.docs.map(d => d.data());
+};
+
+// Cuadre de envases: (apertura + recibidos - cierre) = usados, comparado con lo vendido en el sistema.
 // faltan > 0 significa envases usados que no se reportaron como venta.
-export const buildContainerCheck = (initialInventory = {}, finalInventory = {}, orders = []) =>
+export const buildContainerCheck = (initialInventory = {}, finalInventory = {}, orders = [], received = {}) =>
   CONTAINERS.map(({ key, size, label }) => {
     const apertura = parseInt(initialInventory[key]);
     const cierre = parseInt(finalInventory[key]);
+    const recibidos = parseInt(received[key]) || 0;
     const vendidos = orders
       .flatMap(o => o.items || [])
       .filter(i => i.size === size)
       .reduce((sum, i) => sum + (parseInt(i.quantity) || 0), 0);
     if (isNaN(apertura) || isNaN(cierre)) {
-      return { label, apertura: null, cierre: null, usados: null, vendidos, faltan: null };
+      return { label, apertura: null, recibidos, cierre: null, usados: null, vendidos, faltan: null };
     }
-    const usados = apertura - cierre;
-    return { label, apertura, cierre, usados, vendidos, faltan: usados - vendidos };
+    const usados = apertura + recibidos - cierre;
+    return { label, apertura, recibidos, cierre, usados, vendidos, faltan: usados - vendidos };
   });
 
 // Clasificación de Venta por método de pago

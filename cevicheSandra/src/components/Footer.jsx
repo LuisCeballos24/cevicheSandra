@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import logo from '/logo.png'; // Asegúrate de que la ruta del logo es correcta
+const logo = '/img/logo.webp';
 import { FaFacebookF, FaTwitter, FaInstagram, FaLinkedin } from 'react-icons/fa'; // Asegúrate de tener react-icons instalados
 import { FaMapMarkerAlt, FaHome, FaInfoCircle, FaConciergeBell, FaPhone, FaShoppingCart } from 'react-icons/fa'; // Iconos para secciones del footer
 

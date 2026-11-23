@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FaBars, FaTimes, FaHome, FaInfoCircle, FaConciergeBell, FaPhone, FaShoppingCart, FaSignOutAlt, FaUserCircle } from 'react-icons/fa'; // Importamos los íconos necesarios
-import logo from '/logo.png'; // Ajusta la ruta del logo según la estructura de tu proyecto
+const logo = '/img/logo.webp';
 
 const Header = ({ isAuthenticated, user, onLogin, onLogout }) => {
   const [isMenuOpen, setMenuOpen] = useState(false);

@@ -10,8 +10,8 @@
             "galon": 35.00
         },
         "image": {
-            "cevicheCorvina": "/cevicheCorvina.png",
-            "cevicheCorvina2": "/cevicheCorvina2.png"
+            "cevicheCorvina": "/img/cevicheCorvina.webp",
+            "cevicheCorvina2": "/img/cevicheCorvina2.webp"
         },
         "description": "En los inicios de Ceviches y Cócteles Donde Sandra, Sandra descubrió el secreto para preparar el ceviche tradicional perfecto. Usando solo la corvina más fresca, seleccionada a mano cada mañana, Sandra combina ingredientes frescos y naturales para crear una receta que ha sido transmitida de generación en generación. El resultado es un ceviche con un sabor limpio y vibrante, lleno de la frescura del mar y la tradición culinaria que define nuestra casa. Beneficios: Rico en proteínas, bajo en grasa, y lleno de antioxidantes gracias a los ingredientes frescos y naturales."
     },
@@ -26,8 +26,8 @@
             "galon": 90.00
         },
         "image": {
-            "cevicheCamaron": "/cevicheCamaron.png",
-            "cevicheCorvina2": "/cevicheCamaron2.png"
+            "cevicheCamaron": "/img/cevicheCamaron.webp",
+            "cevicheCorvina2": "/img/cevicheCamaron2.webp"
         },
         "description": "La receta del ceviche de camarón de Sandra comenzó con la búsqueda de los camarones más frescos y sabrosos, que se limpian meticulosamente para garantizar la más alta calidad. Sandra utiliza una mezcla especial de cítricos y hierbas frescas, realzando el sabor natural del camarón con un toque de creatividad y pasión. Cada bocado es una explosión de frescura y sabor, reflejando el amor por la cocina y el compromiso con la excelencia. Beneficios: Alto en proteínas, bajo en calorías y rico en ácidos grasos omega-3, ideal para una dieta balanceada."
     },
@@ -42,8 +42,8 @@
             "galon": 92.00
         },
         "image": {
-            "cevicheCamaron": "/cevicheLangostino.png",
-            "cevicheCorvina2": "/cevicheCamaron2.png"
+            "cevicheCamaron": "/img/cevicheLangostino.webp",
+            "cevicheCorvina2": "/img/cevicheCamaron2.webp"
         },
         "description": "La receta del ceviche de camarón de Sandra comenzó con la búsqueda de los camarones más frescos y sabrosos, que se limpian meticulosamente para garantizar la más alta calidad. Sandra utiliza una mezcla especial de cítricos y hierbas frescas, realzando el sabor natural del camarón con un toque de creatividad y pasión. Cada bocado es una explosión de frescura y sabor, reflejando el amor por la cocina y el compromiso con la excelencia. Beneficios: Alto en proteínas, bajo en calorías y rico en ácidos grasos omega-3, ideal para una dieta balanceada."
     },
@@ -58,8 +58,8 @@
             "galon": 70.00
         },
         "image": {
-            "cevicheMixto16oz": "/cevicheMixto16oz.png",
-            "cevicheMixto16oz2": "/cevicheMixto16oz2.png"
+            "cevicheMixto16oz": "/img/cevicheMixto16oz.webp",
+            "cevicheMixto16oz2": "/img/cevicheMixto16oz2.webp"
         },
         "description": "El ceviche mixto es una de las especialidades más queridas de Sandra. Esta receta combina los sabores del camarón y la corvina en un equilibrio perfecto, aderezado con una mezcla secreta de jugos cítricos y especias. La pasión de Sandra por la calidad se refleja en cada ingrediente, garantizando una mezcla única de frescura y sabor que encanta a todos los que lo prueban. Beneficios: Combina los beneficios de los camarones y la corvina, proporcionando un plato completo y nutritivo, rico en proteínas y vitaminas."
     },
@@ -74,8 +74,8 @@
             "galon": 70.00
         },
         "image": {
-            "cevicheConchaNegra": "/cevicheConchaNegra.png",
-            "conchaNegraTradiciona": "/conchaNegraTradicional.png"
+            "cevicheConchaNegra": "/img/cevicheConchaNegra.webp",
+            "conchaNegraTradiciona": "/img/conchaNegraTradicional.webp"
         },
         "description": "La concha negra, un marisco exótico y apreciado, es el protagonista de este ceviche único. Sandra ha perfeccionado esta receta a lo largo de los años, eligiendo las conchas negras más frescas y añadiendo una mezcla de ingredientes que realzan su sabor natural. La textura tierna y el sabor robusto de las conchas negras crean una experiencia culinaria inigualable. Beneficios: Rico en minerales esenciales y vitaminas, y conocido por sus propiedades antioxidantes y antiinflamatorias."
     },
@@ -90,8 +90,8 @@
             "galon": 80.00
         },
         "image": {
-            "mixtoCoctel": "/mixtoCoctel.png",
-            "coctelMixto2": "/coctelMixto2.png"
+            "mixtoCoctel": "/img/mixtoCoctel.webp",
+            "coctelMixto2": "/img/coctelMixto2.webp"
         },
         "description": "El cóctel mixto de Sandra es una celebración de los sabores del mar. Con una combinación de camarones y corvina en una salsa fresca y vibrante, este cóctel es perfecto para quienes buscan una opción refrescante y llena de sabor. La receta, que Sandra ha perfeccionado con el tiempo, destaca por su equilibrio y frescura, ofreciendo una experiencia de sabor única. Beneficios: Incluye una mezcla de mariscos ricos en proteínas y bajo en grasas, ideal para una dieta saludable y equilibrada."
     },
@@ -105,7 +105,7 @@
             "medio galon": 46.00,
             "galon": 91.00
         },
-        "image": "/coctelCamarones.png",
+        "image": "/img/coctelCamarones.webp",
         "description": "Sandra creó el cóctel de langostino para resaltar la frescura y el sabor del camarón de la más alta calidad. El proceso de limpieza y preparación de los camarones es meticuloso, garantizando que cada bocado sea una delicia. La salsa especial combina perfectamente con los camarones, creando un cóctel que es tanto sabroso como satisfactorio. Beneficios: El camarón es bajo en calorías y rico en nutrientes, proporcionando una fuente excelente de proteínas y antioxidantes."
     },
      {
@@ -118,7 +118,7 @@
             "medio galon": 48.00,
             "galon": 93.00
         },
-        "image": "/coctelLangostino.png",
+        "image": "/img/coctelLangostino.webp",
         "description": "Sandra creó el cóctel de langostino para resaltar la frescura y el sabor del camarón de la más alta calidad. El proceso de limpieza y preparación de los camarones es meticuloso, garantizando que cada bocado sea una delicia. La salsa especial combina perfectamente con los camarones, creando un cóctel que es tanto sabroso como satisfactorio. Beneficios: El camarón es bajo en calorías y rico en nutrientes, proporcionando una fuente excelente de proteínas y antioxidantes."
     },
     {
@@ -131,7 +131,7 @@
             "medio galon": 45.00,
             "galon": 90.00
         },
-        "image": "/coctelMixto16oz.png",
+        "image": "/img/coctelMixto16oz.webp",
         "description": "Sandra creó el cóctel de camarón para resaltar la frescura y el sabor del camarón de la más alta calidad. El proceso de limpieza y preparación de los camarones es meticuloso, garantizando que cada bocado sea una delicia. La salsa especial combina perfectamente con los camarones, creando un cóctel que es tanto sabroso como satisfactorio. Beneficios: El camarón es bajo en calorías y rico en nutrientes, proporcionando una fuente excelente de proteínas y antioxidantes."
     },
     {
@@ -145,8 +145,8 @@
             "galon": 40.00
         },
         "image": {
-            "coctelCorvina": "/coctelCorvina.png",
-            "coctelTropical2": "ejemploPedidoCoctel.png"
+            "coctelCorvina": "/img/coctelCorvina.webp",
+            "coctelTropical2": "/img/ejemploPedidoCoctel.webp"
         },
         "description": "El cóctel de corvina es una de las recetas más tradicionales de Sandra, perfeccionada a lo largo de los años. Utiliza corvina fresca, que se combina con una mezcla especial de cítricos y especias para crear un cóctel que es tanto clásico como innovador. Este cóctel es ideal para quienes buscan una experiencia auténtica con un toque moderno. Beneficios: Rico en proteínas y bajo en grasa, es una opción saludable y deliciosa para cualquier comida."
     },
@@ -161,8 +161,8 @@
             "galon": 70.00
         },
         "image": {
-            "coctelTropical": "/coctelTropical.png",
-            "coctelTropical2": "/coctelTropical2.png"
+            "coctelTropical": "/img/coctelTropical.webp",
+            "coctelTropical2": "/img/coctelTropical2.webp"
         },
         "description": "El Cóctel Tropical es una creación refrescante y exótica que captura la esencia de los trópicos en cada sorbo. Preparado con una base de mariscos frescos y pescado blanco de calidad, este cóctel se eleva a otro nivel con la inclusión de ingredientes como kiwi dulce, coco rallado, mango jugoso, y un toque de piña madura. Todo se mezcla con una salsa especial de cítricos y un toque de jengibre, aportando un balance perfecto entre dulzura, acidez y frescura. Este cóctel no solo es delicioso, sino también una excelente fuente de antioxidantes y vitaminas, convirtiéndolo en una opción refrescante y saludable. Perfecto para los días calurosos o para quienes buscan una experiencia culinaria diferente y tropical."
     },
@@ -176,7 +176,7 @@
             "medio galon": 35.00,
             "galon": 70.00
         },
-        "image": "/cevichePulpo.png",
+        "image": "/img/cevichePulpo.webp",
         "description": "El Ceviche de Pulpo es una deliciosa especialidad marina que ofrece una experiencia culinaria única llena de frescura y sabor. Este platillo se prepara con pulpo tierno y jugoso, marinado en una mezcla de jugos cítricos frescos, como limón y naranja, que resaltan su sabor natural y lo hacen aún más irresistible. Acompañado de crujientes trozos de cebolla roja, pimientos frescos, cilantro aromático y un toque de ají picante, este ceviche logra un equilibrio perfecto entre acidez, frescura y un ligero picante. Cada bocado es una explosión de sabores frescos del mar, enriquecidos con notas cítricas y un sutil toque de especias. Ideal para los amantes de los mariscos que buscan una opción ligera, saludable y llena de personalidad. Perfecto para disfrutar en un día soleado o como entrada en una cena especial."
     },
     {
@@ -189,7 +189,7 @@
             "medio galon": 35.00,
             "galon": 70.00
         },
-        "image": "/cevicheCombinacion.png",
+        "image": "/img/cevicheCombinacion.webp",
         "description": "El Ceviche de combinacion es una deliciosa especialidad marina que ofrece una experiencia culinaria única llena de frescura y sabor. Este platillo se prepara con pulpo, camaron, corvina y concha negra todo fresco y jugoso, marinado en una mezcla de jugos cítricos frescos, como limón y naranja, que resaltan su sabor natural y lo hacen aún más irresistible. Acompañado de crujientes trozos de cebolla roja, pimientos frescos, cilantro aromático y un toque de ají picante, este ceviche logra un equilibrio perfecto entre acidez, frescura y un ligero picante. Cada bocado es una explosión de sabores frescos del mar, enriquecidos con notas cítricas y un sutil toque de especias. Ideal para los amantes de los mariscos que buscan una opción ligera, saludable y llena de personalidad. Perfecto para disfrutar en un día soleado o como entrada en una cena especial."
     },
     {
@@ -202,7 +202,7 @@
             "medio galon": 45.00,
             "galon": 90.00
         },
-        "image": "/coctelPersonalizado.png",
+        "image": "/img/coctelPersonalizado.webp",
         "description": "El Ceviche de  coctel Hawai de corvina es una deliciosa especialidad que puede personalizar el cliente con las frutas que desee en su coctel"
     },
     {
@@ -215,7 +215,7 @@
             "medio galon": 35.00,
             "galon": 70.00
         },
-        "image": "/cevicheHawaiCorvina.png",
+        "image": "/img/cevicheHawaiCorvina.webp",
         "description": "El Ceviche de  coctel Hawai de corvina es una deliciosa especialidad que puede personalizar el cliente con las frutas que desee en su coctel"
     },
     {
@@ -228,7 +228,7 @@
             "medio galon": 45.00,
             "galon": 90.00
         },
-        "image": "/cevicheHawaiCamaronPulpo.png",
+        "image": "/img/cevicheHawaiCamaronPulpo.webp",
         "description": "El Ceviche de  coctel Hawai camaron o pulpo es una deliciosa especialidad que puede personalizar el cliente con las frutas que desee en su coctel"
     },
     {
@@ -237,7 +237,7 @@
         "prices": {
             "1": 1.25
         },
-        "image": "/Sodas.PNG",
+        "image": "/img/Sodas.webp",
         "description": "Sodas blanca o cocacola"
     },
     {
@@ -246,7 +246,7 @@
         "prices": {
             "1": 1.50
         },
-        "image": "/jugosNaranja.jpg",
+        "image": "/img/jugosNaranja.webp",
         "description": "Jugos Naturales"
     },
     {
@@ -255,7 +255,7 @@
         "prices": {
             "1": 0.25
         },
-        "image": "/galletas.PNG",
+        "image": "/img/galletas.webp",
         "description": "galletas de sal de soda"
     },
     {
@@ -264,7 +264,7 @@
         "prices": {
             "1": 0.50
         },
-        "image": "/ejemploPedido.png",
+        "image": "/img/ejemploPedido.webp",
         "description": "nachos extra pequeños"
     },
     {
@@ -273,7 +273,7 @@
         "prices": {
             "1": 1.00
         },
-        "image": "/ejemploPedido2.png",
+        "image": "/img/ejemploPedido2.webp",
         "description": "Nachos Extra Grandes"
     },
     {
@@ -282,7 +282,7 @@
         "prices": {
             "1": 0.25
         },
-        "image": "/bonbonbum.jpg",
+        "image": "/img/bonbonbum.webp",
         "description": "bon bon bum"
     },
     {
@@ -291,7 +291,7 @@
         "prices": {
             "1": 0.50
         },
-        "image": "/platanitos.PNG",
+        "image": "/img/platanitos.webp",
         "description": "platanitos frescos"
     },
     {
@@ -300,7 +300,7 @@
         "prices": {
             "1": 1.00
         },
-        "image": "/agua.jpg",
+        "image": "/img/agua.webp",
         "description": "agua fresca"
     },
     {
@@ -309,7 +309,7 @@
         "prices": {
             "1": 1.00
         },
-        "image": "/luni.png",
+        "image": "/img/luni.webp",
         "description": "agua fresca"
     },
     {
@@ -318,7 +318,7 @@
         "prices": {
             "1": 0.50
         },
-        "image": "/lunipeque.png",
+        "image": "/img/lunipeque.webp",
         "description": "agua fresca"
     }
 ]
