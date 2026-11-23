@@ -23,6 +23,30 @@ export const fetchTodayOrders = async (userName) => {
   return querySnapshot.docs.map(d => d.data()).filter(o => o.user === userName);
 };
 
+// Envases del inventario y el tamaño de venta que los usa
+export const CONTAINERS = [
+  { key: 'envases16oz', size: '16oz', label: '16oz' },
+  { key: 'envases24oz', size: '24oz', label: '24oz' },
+  { key: 'vasos7oz', size: '7oz', label: '7oz' },
+];
+
+// Cuadre de envases: (apertura - cierre) = usados, comparado con lo vendido en el sistema.
+// faltan > 0 significa envases usados que no se reportaron como venta.
+export const buildContainerCheck = (initialInventory = {}, finalInventory = {}, orders = []) =>
+  CONTAINERS.map(({ key, size, label }) => {
+    const apertura = parseInt(initialInventory[key]);
+    const cierre = parseInt(finalInventory[key]);
+    const vendidos = orders
+      .flatMap(o => o.items || [])
+      .filter(i => i.size === size)
+      .reduce((sum, i) => sum + (parseInt(i.quantity) || 0), 0);
+    if (isNaN(apertura) || isNaN(cierre)) {
+      return { label, apertura: null, cierre: null, usados: null, vendidos, faltan: null };
+    }
+    const usados = apertura - cierre;
+    return { label, apertura, cierre, usados, vendidos, faltan: usados - vendidos };
+  });
+
 // Clasificación de Venta por método de pago
 export const sumTotals = (orders) => {
   const totals = { efectivo: 0, yappy: 0, tarjeta: 0 };

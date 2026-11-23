@@ -3,7 +3,7 @@ import { db } from './FirebaseConfig';
 import { collection, addDoc, query, where, getDocs } from 'firebase/firestore';
 import Slider from 'react-slick';
 import InventoryTextForm from './InventoryTextForm';
-import { fetchTodayOrders, sumTotals } from './ventasUtils';
+import { fetchTodayOrders, sumTotals, buildContainerCheck, CONTAINERS } from './ventasUtils';
 import { FaTrash, FaSignOutAlt, FaCashRegister, FaWhatsapp, FaTag, FaCreditCard } from 'react-icons/fa';
 
 // Minutos hacia atrás en los que un pedido idéntico se considera posible repetición
@@ -488,6 +488,13 @@ const CevicheVenta = () => {
          }
          const cashReported = parseFloat(closingRegisterReport.dinero);
 
+         // Los envases son necesarios para el cuadre
+         const missingContainers = CONTAINERS.filter(c => inventoryDailyReport[c.key] === '' || isNaN(parseInt(inventoryDailyReport[c.key])));
+         if (missingContainers.length > 0) {
+             setClosingModalError(`Ingresa la cantidad de envases: ${missingContainers.map(c => c.label).join(', ')}.`);
+             return;
+         }
+
          // Evita enviar el cierre dos veces (doble clic)
          if (await existsToday('daily_closing_reports', user.name)) {
              setShowCloseRegisterModal(false);
@@ -495,9 +502,23 @@ const CevicheVenta = () => {
              return;
          }
 
-         // Totales del sistema: solo se guardan para el resumen de Sandra, no se muestran ni se envían
-         const systemTotals = sumTotals(await fetchTodayOrders(user.name));
+         const todayOrders = await fetchTodayOrders(user.name);
+         const systemTotals = sumTotals(todayOrders);
          const diff = cashReported - systemTotals.efectivo;
+
+         // Cuadre de envases contra el inventario inicial del día
+         const initialSnapshot = await getDocs(query(
+             collection(db, 'daily_inventory_reports'),
+             where('user', '==', user.name),
+             where('date', '==', new Date().toDateString())
+         ));
+         const initialInventory = initialSnapshot.empty ? {} : (initialSnapshot.docs[0].data().inventory || {});
+         const containerCheck = buildContainerCheck(initialInventory, inventoryDailyReport, todayOrders);
+         const containerText = containerCheck.map(c => {
+             if (c.usados === null) return `\n- ${c.label}: sin conteo de apertura (vendidos ${c.vendidos})`;
+             const status = c.faltan === 0 ? '✅ Cuadra' : c.faltan > 0 ? `⚠️ Faltan ${c.faltan}` : `⚠️ Sobran ${-c.faltan}`;
+             return `\n- ${c.label}: abrió ${c.apertura}, cerró ${c.cierre} → usados ${c.usados} | reportados ${c.vendidos} → ${status}`;
+         }).join('');
 
          let inventoryText = "";
          // Generación de texto de inventario (reutilizada)
@@ -522,7 +543,7 @@ const CevicheVenta = () => {
          }
 
          // Mensaje Cierre (Incluye Tarjeta)
-         const msg = `*Cierre de Caja - ${user.name}*\nFecha: ${new Date().toLocaleDateString()}\n\n*DINERO:*\n- Sistema (Efectivo): $${systemTotals.efectivo.toFixed(2)}\n- Sistema (Yappy): $${systemTotals.yappy.toFixed(2)}\n- Sistema (Tarjeta): $${systemTotals.tarjeta.toFixed(2)}\n----------------\n- En Caja (Efectivo Real): $${cashReported.toFixed(2)}\n- Diferencia Efectivo: $${diff.toFixed(2)}\n\n*INVENTARIO FINAL:*${inventoryText}`;
+         const msg = `*Cierre de Caja - ${user.name}*\nFecha: ${new Date().toLocaleDateString()}\n\n*DINERO:*\n- Sistema (Efectivo): $${systemTotals.efectivo.toFixed(2)}\n- Sistema (Yappy): $${systemTotals.yappy.toFixed(2)}\n- Sistema (Tarjeta): $${systemTotals.tarjeta.toFixed(2)}\n----------------\n- En Caja (Efectivo Real): $${cashReported.toFixed(2)}\n- Diferencia Efectivo: $${diff.toFixed(2)}\n\n*CUADRE DE ENVASES:*${containerText}\n\n*INVENTARIO FINAL:*${inventoryText}`;
          const link = `https://wa.me/50767961550?text=${encodeURIComponent(msg)}`;
          
          await addDoc(collection(db, 'daily_closing_reports'), { 
@@ -531,6 +552,7 @@ const CevicheVenta = () => {
              cashReported, 
              systemTotals,
              difference: diff,
+             containerCheck,
              finalInventory: inventoryDailyReport,
              timestamp: new Date() 
          });

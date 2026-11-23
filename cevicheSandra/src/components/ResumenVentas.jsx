@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { db } from './FirebaseConfig';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
-import { ordersOfDayQuery, sumTotals } from './ventasUtils';
+import { ordersOfDayQuery, sumTotals, buildContainerCheck } from './ventasUtils';
 import { FaSignOutAlt, FaMoneyBillWave, FaMobileAlt, FaCreditCard, FaExclamationTriangle, FaCashRegister } from 'react-icons/fa';
 
 // SHA-256 de la clave de acceso al resumen (solo Sandra); la clave no se guarda en el código
@@ -165,7 +165,40 @@ const ResumenVentas = () => {
                       <p className="font-bold flex items-center gap-2"><FaCashRegister /> Cierre enviado a las {formatTime(closing.timestamp)}</p>
                       <p>En caja: <b>{money(closing.cashReported)}</b> · Sistema efectivo: <b>{money(totals.efectivo)}</b> · Diferencia: <b>{money(closing.cashReported - totals.efectivo)}</b></p>
                     </div>
-                  ) : closingPending ? (
+                  ) : null}
+
+                  {/* Cuadre de envases (del cierre) o envases vendidos en vivo */}
+                  {closing?.containerCheck ? (
+                    <div className="overflow-x-auto mb-2">
+                      <table className="w-full text-sm text-center">
+                        <thead>
+                          <tr className="text-[11px] text-gray-500 uppercase">
+                            <th className="text-left p-1">Envase</th><th className="p-1">Abrió</th><th className="p-1">Cerró</th><th className="p-1">Usados</th><th className="p-1">Reportados</th><th className="p-1">Cuadre</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {closing.containerCheck.map(c => (
+                            <tr key={c.label} className="border-t border-gray-100">
+                              <td className="text-left p-1 font-bold">{c.label}</td>
+                              <td className="p-1">{c.apertura ?? '-'}</td>
+                              <td className="p-1">{c.cierre ?? '-'}</td>
+                              <td className="p-1">{c.usados ?? '-'}</td>
+                              <td className="p-1">{c.vendidos}</td>
+                              <td className={`p-1 font-bold ${c.faltan === 0 ? 'text-green-700' : 'text-red-600'}`}>
+                                {c.faltan === null ? 'Sin datos' : c.faltan === 0 ? '✅ Cuadra' : c.faltan > 0 ? `Faltan ${c.faltan}` : `Sobran ${-c.faltan}`}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <p className="text-xs text-gray-500 mb-2">
+                      Envases vendidos: {buildContainerCheck({}, {}, userOrders).map(c => `${c.label}: ${c.vendidos}`).join(' · ')}
+                    </p>
+                  )}
+
+                  {closing ? null : closingPending ? (
                     <p className="rounded-lg p-3 text-sm mb-2 bg-yellow-50 text-yellow-800 font-bold">⏳ Abrió el cierre de caja pero todavía no lo envía</p>
                   ) : (
                     <p className="text-xs text-gray-400 mb-2">Sin cierre de caja</p>
