@@ -3,7 +3,7 @@
 export const SITE = {
   name: 'Ceviches y Cócteles Donde Sandra',
   shortName: 'Donde Sandra',
-  url: 'https://propios-c6d5c.web.app',
+  url: 'https://cevichesycoctelesdondesandra.com',
   email: 'cevichesycoctelesdondesandra@gmail.com',
   // WhatsApp para pedidos (formato internacional sin +)
   whatsapp: '50767961550',

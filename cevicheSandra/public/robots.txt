@@ -4,4 +4,4 @@ Disallow: /venta
 Disallow: /resumen
 Disallow: /metricas
 
-Sitemap: https://propios-c6d5c.web.app/sitemap.xml
+Sitemap: https://cevichesycoctelesdondesandra.com/sitemap.xml
