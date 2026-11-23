@@ -12,7 +12,7 @@ export const SITE = {
   // Enlace del perfil de Google Business (ej: https://g.page/r/XXXX). Vacío = no se muestra.
   googleBusinessUrl: 'https://share.google/DWYD5YMKKSdwqj6F5',
   // Enlace para dejar reseña (ej: https://g.page/r/XXXX/review). Vacío = no se muestra.
-  googleReviewUrl: 'https://share.google/DWYD5YMKKSdwqj6F5',
+  googleReviewUrl: 'https://g.page/r/CYzuVjYlhBXbEAE/review',
   // Horario visible en el sitio. Vacío = no se muestra.
   hours: '',
   // Redes sociales. Vacío = no se muestra.
