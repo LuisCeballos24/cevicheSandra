@@ -1,115 +1,91 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { FaBars, FaTimes, FaHome, FaInfoCircle, FaConciergeBell, FaPhone, FaShoppingCart, FaSignOutAlt, FaUserCircle } from 'react-icons/fa'; // Importamos los íconos necesarios
+import { useState, useEffect } from 'react';
+import { Link, NavLink, useLocation } from 'react-router-dom';
+import { FaBars, FaTimes, FaSignOutAlt, FaUserCircle, FaShoppingBag } from 'react-icons/fa';
+import { SITE } from '../siteConfig';
+import { WhatsAppButton } from './SiteUi';
+
 const logo = '/img/logo.webp';
+
+const NAV_LINKS = [
+  { to: '/', label: 'Inicio' },
+  { to: '/menu', label: 'Menú' },
+  { to: '/nosotros', label: 'Nosotros' },
+  { to: '/contacto', label: 'Contacto' },
+];
 
 const Header = ({ isAuthenticated, user, onLogin, onLogout }) => {
   const [isMenuOpen, setMenuOpen] = useState(false);
+  const { pathname } = useLocation();
 
-  const toggleMenu = () => {
-    setMenuOpen(!isMenuOpen);
-  };
+  // Cierra el menú móvil al cambiar de página
+  useEffect(() => { setMenuOpen(false); }, [pathname]);
+
+  const linkClass = ({ isActive }) =>
+    `px-3 py-2 rounded-full text-sm font-semibold transition ${isActive ? 'bg-coral-light text-coral-dark' : 'text-gray-700 hover:text-ocean hover:bg-sand'}`;
 
   return (
-    <header className="flex flex-col md:flex-row items-center justify-between py-4 px-4 md:px-6 bg-[rgba(226,149,120,0.8)] rounded-lg shadow-lg">
-      {/* Logo and Branding */}
-      <div className="flex items-center justify-between w-full md:w-auto">
-        <Link to="/" className="flex items-center">
-          <img src={logo} alt="CevicheSandra Logo" className="h-10 w-10 md:h-16 md:w-16 object-contain" />
-          <span className="ml-2 text-lg md:text-2xl font-bold text-gray-800">
-            Ceviches y Cocteles Donde Sandra
+    <header className="sticky top-0 z-50 bg-white/90 backdrop-blur border-b border-sand-dark">
+      <div className="max-w-6xl mx-auto px-4 h-16 md:h-20 flex items-center justify-between gap-4">
+        <Link to="/" className="flex items-center gap-2 min-w-0">
+          <img src={logo} alt={`Logo ${SITE.name}`} width="56" height="56" className="h-11 w-11 md:h-14 md:w-14 object-contain" />
+          <span className="font-extrabold text-ocean leading-tight text-sm sm:text-base md:text-lg">
+            Ceviches y Cócteles<br className="sm:hidden" /> <span className="text-coral">Donde Sandra</span>
           </span>
         </Link>
 
-        {/* Hamburger Menu Icon */}
+        <nav className="hidden md:flex items-center gap-1" aria-label="Principal">
+          {NAV_LINKS.map(l => <NavLink key={l.to} to={l.to} end className={linkClass}>{l.label}</NavLink>)}
+        </nav>
+
+        <div className="hidden md:flex items-center gap-2">
+          <Link to="/shop" className="inline-flex items-center gap-2 bg-coral hover:bg-coral-dark text-white font-semibold px-5 py-2.5 rounded-full shadow transition text-sm">
+            <FaShoppingBag /> Ordenar
+          </Link>
+          {isAuthenticated ? (
+            <button onClick={onLogout} className="flex items-center gap-2 text-sm text-gray-600 hover:text-ocean px-2" title="Cerrar sesión">
+              {user.photoURL
+                ? <img src={user.photoURL} alt="" className="h-8 w-8 rounded-full object-cover" referrerPolicy="no-referrer" />
+                : <FaUserCircle size={24} />}
+              <FaSignOutAlt />
+            </button>
+          ) : (
+            <button onClick={onLogin} className="text-gray-500 hover:text-ocean px-2" title="Iniciar sesión">
+              <FaUserCircle size={24} />
+            </button>
+          )}
+        </div>
+
         <button
-          onClick={toggleMenu}
-          className="text-gray-800 md:hidden focus:outline-none"
+          onClick={() => setMenuOpen(!isMenuOpen)}
+          className="md:hidden text-ocean p-2"
+          aria-label={isMenuOpen ? 'Cerrar menú' : 'Abrir menú'}
+          aria-expanded={isMenuOpen}
         >
-          {isMenuOpen ? <FaTimes size={24} /> : <FaBars size={24} />}
+          {isMenuOpen ? <FaTimes size={22} /> : <FaBars size={22} />}
         </button>
       </div>
 
-      {/* Navigation Links */}
-      <nav
-        className={`${
-          isMenuOpen ? 'flex' : 'hidden'
-        } flex-col md:flex md:flex-row md:space-x-6 w-full md:w-auto mt-4 md:mt-0`}
-      >
-        <Link
-          to="/"
-          className="flex items-center space-x-2 text-gray-800 hover:bg-gray-700 hover:text-yellow-600 transition duration-300 text-center text-sm md:text-base shadow-md hover:shadow-lg p-2 rounded"
-        >
-          <FaHome />
-          <span>Home</span>
-        </Link>
-        <Link
-          to="/nosotros"
-          className="flex items-center space-x-2 text-gray-800 hover:bg-gray-700 hover:text-yellow-600 transition duration-300 text-center text-sm md:text-base shadow-md hover:shadow-lg p-2 rounded"
-        >
-          <FaInfoCircle />
-          <span>About</span>
-        </Link>
-        <Link
-          to="/menu"
-          className="flex items-center space-x-2 text-gray-800 hover:bg-gray-700 hover:text-yellow-600 transition duration-300 text-center text-sm md:text-base shadow-md hover:shadow-lg p-2 rounded"
-        >
-          <FaConciergeBell />
-          <span>Menu</span>
-        </Link>
-        <Link
-          to="/contacto"
-          className="flex items-center space-x-2 text-gray-800 hover:bg-gray-700 hover:text-yellow-600 transition duration-300 text-center text-sm md:text-base shadow-md hover:shadow-lg p-2 rounded"
-        >
-          <FaPhone />
-          <span>Contact</span>
-        </Link>
-        <Link
-          to="/shop"
-          className="flex items-center space-x-2 text-gray-800 hover:bg-gray-700 hover:text-yellow-600 transition duration-300 text-center text-sm md:text-base shadow-md hover:shadow-lg p-2 rounded"
-        >
-          <FaShoppingCart />
-          <span>Shop</span>
-        </Link>
-      </nav>
-
-      {/* User Actions */}
-      <div className="flex items-center space-x-4 mt-4 md:mt-0">
-        {isAuthenticated ? (
-          <>
-            {/* Foto de Usuario */}
-            {user.photoURL ? (
-              <img
-                src={user.photoURL}
-                alt="User Profile"
-                className="h-8 w-8 md:h-10 md:w-10 rounded-full object-cover border-2 border-gray-600"
-              />
+      {/* Menú móvil */}
+      {isMenuOpen && (
+        <div className="md:hidden border-t border-sand-dark bg-white px-4 py-4 space-y-2">
+          {NAV_LINKS.map(l => (
+            <NavLink key={l.to} to={l.to} end className={({ isActive }) => `block px-4 py-3 rounded-xl font-semibold ${isActive ? 'bg-coral-light text-coral-dark' : 'text-gray-700'}`}>
+              {l.label}
+            </NavLink>
+          ))}
+          <Link to="/shop" className="flex items-center justify-center gap-2 bg-coral text-white font-semibold px-5 py-3 rounded-full">
+            <FaShoppingBag /> Ordenar en línea
+          </Link>
+          <WhatsAppButton className="w-full" />
+          <div className="pt-2 text-center">
+            {isAuthenticated ? (
+              <button onClick={onLogout} className="text-sm text-gray-500 inline-flex items-center gap-2"><FaSignOutAlt /> Cerrar sesión ({user.displayName || 'Usuario'})</button>
             ) : (
-              <div className="h-8 w-8 md:h-10 md:w-10 rounded-full bg-gray-300 flex items-center justify-center">
-                <FaUserCircle className="text-gray-600 text-xl md:text-2xl" />
-              </div>
+              <button onClick={onLogin} className="text-sm text-gray-500 inline-flex items-center gap-2"><FaUserCircle /> Iniciar sesión</button>
             )}
-            <span className="text-gray-800 text-sm md:text-base">
-              {user.displayName || 'User'}
-            </span>
-            <button
-              onClick={onLogout}
-              className="flex items-center space-x-2 text-gray-800 border border-gray-800 rounded-full px-3 py-1 md:px-4 md:py-2 hover:bg-gray-800 hover:text-white transition duration-300"
-            >
-              <FaSignOutAlt className="text-lg md:text-xl" />
-              <span>Cerrar Sesión</span>
-            </button>
-          </>
-        ) : (
-          <button
-            onClick={onLogin}
-            className="flex items-center space-x-2 text-gray-800 border border-gray-800 rounded-full px-3 py-1 md:px-4 md:py-2 hover:bg-gray-800 hover:text-white transition duration-300"
-          >
-            <FaUserCircle className="text-lg md:text-xl" />
-            <span>Iniciar Sesión</span>
-          </button>
-        )}
-      </div>
+          </div>
+        </div>
+      )}
     </header>
   );
 };

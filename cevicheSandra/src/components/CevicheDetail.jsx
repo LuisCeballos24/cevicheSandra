@@ -1,179 +1,148 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
-import Slider from 'react-slick'; // Importa el componente Slider de react-slick
-import 'slick-carousel/slick/slick.css'; 
-import 'slick-carousel/slick/slick-theme.css'; 
+import { useState } from 'react';
+import { useLocation, useParams, Link } from 'react-router-dom';
+import { FaArrowLeft } from 'react-icons/fa';
+import { SITE } from '../siteConfig';
+import { usePageMeta } from '../usePageMeta';
+import { useMenuData, getImages, formatPrice, minPrice, sizeLabel, getCategory } from '../useMenuData';
+import { WhatsAppButton, ProductCard } from './SiteUi';
+
+// Foto de ejemplo de cada envase
+const SIZE_IMAGES = {
+  '7oz': '/img/VasoTrasparente7oz.webp',
+  '16oz': '/img/VasoIcopor16oz.webp',
+  '24oz': '/img/VasoIcopor24oz.webp',
+  'medio galon': '/img/medioGalon.webp',
+  'galon': '/img/Galon.webp'
+};
 
 const CevicheDetail = () => {
-  const location = useLocation();
-  const navigate = useNavigate();
-  const { ceviche } = location.state || {};
-  
-  const sliderRef = useRef(null); // Referencia al componente Slider
+  const { id } = useParams();
+  const { state } = useLocation();
+  const { menu, loading } = useMenuData();
+  // Se usa el producto que viene de la navegación o se busca por id (enlace directo / Google)
+  const ceviche = menu.find(p => String(p.id) === id) || state?.ceviche;
 
+  const [activeImage, setActiveImage] = useState(0);
   const [selectedSize, setSelectedSize] = useState(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [loadingImage, setLoadingImage] = useState(true);
-  const [selectedImageKey, setSelectedImageKey] = useState(null);
 
-  useEffect(() => {
-    if (ceviche && selectedImageKey) {
-      const imageUrl = typeof ceviche.image === 'object' ? ceviche.image[selectedImageKey] : ceviche.image;
-      const img = new Image();
-      img.src = imageUrl;
-      img.onload = () => setLoadingImage(false);
-      img.onerror = () => setLoadingImage(false);
-    }
-  }, [ceviche, selectedImageKey]);
+  usePageMeta({
+    title: ceviche ? `${ceviche.name} desde ${formatPrice(minPrice(ceviche.prices))}` : 'Producto',
+    description: ceviche
+      ? `${ceviche.name} de ${SITE.name}. ${(ceviche.description || '').slice(0, 120)}`.trim()
+      : undefined,
+    path: `/ceviche/${id}`,
+    image: ceviche ? getImages(ceviche.image)[0] : undefined,
+  });
 
   if (!ceviche) {
-    return <p className="text-center text-lg">No se encontró información del ceviche.</p>;
+    return (
+      <div className="max-w-6xl mx-auto px-4 py-24 text-center">
+        {loading
+          ? <div className="h-10 w-10 mx-auto rounded-full border-4 border-coral-light border-t-coral animate-spin" />
+          : <>
+              <p className="text-lg text-gray-600 mb-6">No encontramos este producto.</p>
+              <Link to="/menu" className="bg-ocean text-white px-6 py-3 rounded-full font-semibold">Ver el menú</Link>
+            </>}
+      </div>
+    );
   }
 
-  const sizeList = Object.keys(ceviche.prices).map((size) => (
-    <li
-      key={size}
-      className="mb-2 cursor-pointer text-gray-800 hover:underline"
-      onClick={() => {
-        setSelectedSize(size);
-        setIsModalOpen(true);
-      }}
-    >
-      {size}
-    </li>
-  ));
+  const images = getImages(ceviche.image);
+  const sizes = Object.entries(ceviche.prices);
+  const related = menu.filter(p => p.id !== ceviche.id && getCategory(p.name) === getCategory(ceviche.name)).slice(0, 3);
 
-  const sizeImages = {
-    '7oz': '/img/VasoTrasparente7oz.webp',
-    '16oz': '/img/VasoIcopor16oz.webp',
-    '24oz': '/img/VasoIcopor24oz.webp',
-    'medio galon': '/img/medioGalon.webp',
-    'galon': '/img/Galon.webp'
-  };
-
-  const closeModal = () => setIsModalOpen(false);
-
-  const handleImageChange = (imageKey) => {
-    setSelectedImageKey(imageKey);
-    if (sliderRef.current) {
-      const index = Object.keys(ceviche.image).indexOf(imageKey);
-      sliderRef.current.slickGoTo(index); // Cambia al índice de la imagen seleccionada
-    }
-  };
-
-  // Mostrar automáticamente la primera imagen si hay varias imágenes
-  const defaultImage = typeof ceviche.image === 'object' ? Object.keys(ceviche.image)[0] : 'singleImage';
-
-  // Configuración del carrusel
-  const carouselSettings = {
-    dots: false, // Desactiva los puntos de navegación
-    infinite: true,
-    speed: 500,
-    slidesToShow: 1,
-    slidesToScroll: 1,
-    autoplay: true, // Activa la reproducción automática
-    autoplaySpeed: 3000, // Velocidad de transición en milisegundos
-    arrows: true, // Asegúrate de que las flechas de navegación estén habilitadas
-    beforeChange: (current, next) => {
-      setSelectedImageKey(Object.keys(ceviche.image)[next]);
-    }
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'MenuItem',
+    name: ceviche.name,
+    description: ceviche.description,
+    image: images.map(i => `${SITE.url}${i}`),
+    offers: sizes.map(([size, price]) => ({
+      '@type': 'Offer',
+      name: sizeLabel(size),
+      price: Number(price).toFixed(2),
+      priceCurrency: 'USD',
+    })),
   };
 
   return (
-    <div className="container mx-auto p-4 md:p-6 lg:p-8">
-      <button
-        onClick={() => navigate(-1)}
-        className="bg-gray-800 text-white px-4 py-2 rounded-md mb-4"
-      >
-        Volver
-      </button>
-      <div className="flex flex-col md:flex-row items-center">
-        <div className="w-full md:w-1/2 mb-4 md:mb-0">
-          <div className="flex flex-wrap mb-4">
-            {typeof ceviche.image === 'object' ? (
-              Object.keys(ceviche.image).map((imageKey) => (
+    <div className="max-w-6xl mx-auto px-4 py-8 md:py-12">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+
+      <Link to="/menu" className="inline-flex items-center gap-2 text-ocean font-semibold mb-6 hover:text-coral transition">
+        <FaArrowLeft /> Volver al menú
+      </Link>
+
+      <div className="grid gap-8 md:gap-12 md:grid-cols-2">
+        {/* Galería */}
+        <div>
+          <div className="aspect-square rounded-3xl overflow-hidden bg-sand-dark shadow-lg">
+            <img src={images[activeImage]} alt={`${ceviche.name} - ${SITE.name}`} className="w-full h-full object-cover" />
+          </div>
+          {images.length > 1 && (
+            <div className="flex gap-3 mt-4">
+              {images.map((img, i) => (
                 <button
-                  key={imageKey}
-                  onClick={() => handleImageChange(imageKey)}
-                  className={`mr-2 mb-2 p-1 rounded-md border ${selectedImageKey === imageKey ? 'border-blue-500' : 'border-gray-300'}`}
+                  key={img}
+                  onClick={() => setActiveImage(i)}
+                  className={`h-20 w-20 rounded-xl overflow-hidden border-2 transition ${i === activeImage ? 'border-coral' : 'border-transparent opacity-70 hover:opacity-100'}`}
+                  aria-label={`Ver foto ${i + 1}`}
                 >
-                  <img
-                    src={ceviche.image[imageKey]}
-                    alt={`Vista ${imageKey}`}
-                    className="w-24 h-24 object-contain rounded" // Reducido tamaño para miniaturas
-                  />
+                  <img src={img} alt="" loading="lazy" className="w-full h-full object-cover" />
                 </button>
-              ))
-            ) : (
-              <button
-                onClick={() => handleImageChange('singleImage')}
-                className={`mr-2 mb-2 p-1 rounded-md border ${selectedImageKey === 'singleImage' ? 'border-blue-500' : 'border-gray-300'}`}
-              >
-                <img
-                  src={ceviche.image}
-                  alt={ceviche.name}
-                  className="w-24 h-24 object-contain rounded" // Reducido tamaño para miniaturas
-                />
-              </button>
-            )}
-          </div>
-          {/* Carrusel de imágenes */}
-          {typeof ceviche.image === 'object' ? (
-            <Slider {...carouselSettings} className="w-full" ref={sliderRef}>
-              {Object.keys(ceviche.image).map((imageKey) => (
-                <div key={imageKey} className="px-2">
-                  <img
-                    src={ceviche.image[imageKey]}
-                    alt={`Vista ${imageKey}`}
-                    className="w-full h-96 object-contain rounded-lg" // Tamaño más grande para la imagen principal
-                  />
-                </div>
               ))}
-            </Slider>
-          ) : (
-            <img
-              src={ceviche.image}
-              alt={ceviche.name}
-              className="rounded-lg shadow-lg w-full h-96 object-contain"
-              onLoad={() => setLoadingImage(false)}
-              onError={() => setLoadingImage(false)}
-            />
+            </div>
           )}
-          {loadingImage && <p className="text-center mt-2 text-gray-600">Cargando imagen...</p>}
         </div>
-        <div className="w-full md:w-1/2 md:pl-8">
-          <h1 className="text-2xl md:text-3xl font-bold mb-2 text-center md:text-left">{ceviche.name}</h1>
-          <div className="bg-red-200 bg-opacity-50 p-4 rounded-lg flex flex-col mb-4">
-            <p className="text-base md:text-lg font-bold text-gray-800">{ceviche.description}</p>
+
+        {/* Información */}
+        <div>
+          <h1 className="text-3xl md:text-4xl font-extrabold text-ocean">{ceviche.name}</h1>
+          <p className="text-coral font-bold text-xl mt-2">Desde {formatPrice(minPrice(ceviche.prices))}</p>
+          {ceviche.description && <p className="text-gray-600 mt-5 leading-relaxed">{ceviche.description}</p>}
+
+          <h2 className="font-bold text-ocean mt-8 mb-3">Tamaños y precios</h2>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            {sizes.map(([size, price]) => (
+              <button
+                key={size}
+                onClick={() => setSelectedSize(SIZE_IMAGES[size] ? size : null)}
+                className={`rounded-xl border p-3 text-left transition ${selectedSize === size ? 'border-coral bg-coral-light' : 'border-sand-dark bg-white hover:border-ocean'}`}
+              >
+                <span className="block text-sm text-gray-500 capitalize">{sizeLabel(size)}</span>
+                <span className="block font-bold text-gray-800">{formatPrice(price)}</span>
+              </button>
+            ))}
           </div>
-          <div className="bg-red-200 bg-opacity-50 p-4 rounded-lg">
-            <h2 className="text-lg md:text-xl font-bold mb-2">Contamos con los siguientes tamaños:</h2>
-            <p className="text-gray-800 mb-4">Haz clic en uno de los tamaños para ver un ejemplo de cómo se presenta.</p>
-            <ul className="list-disc pl-5 mb-4 text-gray-800 font-bold">
-              {sizeList}
-            </ul>
+          {sizes.some(([size]) => SIZE_IMAGES[size]) && !selectedSize && (
+            <p className="text-xs text-gray-500 mt-2">Toca un tamaño para ver cómo se presenta.</p>
+          )}
+          {selectedSize && (
+            <div className="mt-4 bg-white rounded-2xl p-4 border border-sand-dark flex items-center gap-4">
+              <img src={SIZE_IMAGES[selectedSize]} alt={`Envase ${selectedSize}`} className="h-28 w-28 object-contain" />
+              <p className="text-sm text-gray-600">Así se presenta el tamaño <b className="capitalize">{sizeLabel(selectedSize)}</b>.</p>
+            </div>
+          )}
+
+          <div className="mt-8 flex flex-col sm:flex-row gap-3">
+            <WhatsAppButton
+              text={`Hola ${SITE.shortName}, quiero pedir ${ceviche.name}${selectedSize ? ` de ${sizeLabel(selectedSize)}` : ''}.`}
+              label="Pedir este por WhatsApp"
+            />
+            <Link to="/shop" className="inline-flex items-center justify-center border-2 border-ocean text-ocean font-semibold px-6 py-3 rounded-full hover:bg-ocean hover:text-white transition">
+              Ordenar en línea
+            </Link>
           </div>
         </div>
       </div>
 
-      {/* Modal */}
-      {isModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-4 md:p-6 rounded-lg shadow-lg max-w-xs md:max-w-md mx-auto relative">
-            <button
-              onClick={closeModal}
-              className="absolute top-2 right-2 bg-gray-800 text-white px-2 py-1 rounded-full"
-            >
-              &times;
-            </button>
-            <h2 className="text-lg md:text-xl font-bold mb-2">Ejemplo del tamaño seleccionado:</h2>
-            <img
-              src={sizeImages[selectedSize]}
-              alt={`Ejemplo ${selectedSize}`}
-              className="w-full h-auto rounded-lg object-contain" // Ajuste de tamaño del modal
-            />
+      {related.length > 0 && (
+        <section className="mt-16">
+          <h2 className="text-2xl font-extrabold text-ocean mb-6">También te puede gustar</h2>
+          <div className="grid gap-5 grid-cols-2 lg:grid-cols-3">
+            {related.map(p => <ProductCard key={p.id} product={p} />)}
           </div>
-        </div>
+        </section>
       )}
     </div>
   );

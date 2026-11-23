@@ -1,93 +1,61 @@
-import React, { useEffect, useState } from 'react';
-import { FaFacebookF, FaTwitter, FaInstagram, FaLinkedin } from 'react-icons/fa'; // Íconos de redes sociales
+import { FaWhatsapp, FaEnvelope, FaClock, FaStar } from 'react-icons/fa';
+import { SITE, whatsappLink } from '../siteConfig';
+import { usePageMeta } from '../usePageMeta';
+import { PageHero, LocationCard, SectionTitle } from './SiteUi';
 
 const Contacto = () => {
-  const [ubicaciones, setUbicaciones] = useState([]);
-
-  useEffect(() => {
-    fetch('/ubicaciones.json')
-      .then((response) => response.json())
-      .then((data) => setUbicaciones(data))
-      .catch((error) => console.error('Error fetching ubicaciones:', error));
-  }, []);
+  usePageMeta({
+    title: 'Contacto y sucursales',
+    description: `Contacta a ${SITE.name}. Pedidos por WhatsApp al ${SITE.phoneDisplay}. Sucursales en Altos de la Calzada y Praderas de San Lorenzo, Panamá.`,
+    path: '/contacto',
+  });
 
   return (
-    <section className="bg-[rgba(250,210,180,0.8)] py-12 px-4 sm:px-6 lg:px-8">
-      <div className="container mx-auto max-w-screen-lg px-4">
-        <h1 className="text-3xl sm:text-4xl font-bold text-center text-gray-800 mb-8">Contáctanos</h1>
+    <>
+      <PageHero title="Contáctanos" subtitle="Escríbenos para pedidos, eventos o pedidos grandes por galón." />
 
-        <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start">
-          {/* Información de Contacto */}
-          <div className="w-full lg:w-1/2 mb-8 lg:mb-0">
-            <h2 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-4">Información de Contacto</h2>
-            <p className="text-base sm:text-lg text-gray-700 mb-4">
-              Correo electrónico:
-              <a
-                href="mailto:cevichesycoctelesdondesandra@gmail.com"
-                className="text-yellow-600 hover:text-yellow-800 break-words"
-              >
-                cevichesycoctelesdondesandra@gmail.com
-              </a>
-            </p>
-
-            <h3 className="text-xl sm:text-2xl font-bold text-gray-800 mb-4">Ubicaciones</h3>
-            <ul className="space-y-2">
-              {ubicaciones.map((ubicacion, index) => (
-                <li key={index}>
-                  <a
-                    href={ubicacion.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-gray-700 hover:text-yellow-600 transition duration-300 text-base sm:text-lg break-words"
-                  >
-                    {ubicacion.name}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Redes Sociales */}
-          <div className="w-full lg:w-1/2 flex flex-col items-center lg:items-start">
-            <h2 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-4">Síguenos en Redes Sociales</h2>
-            <div className="flex flex-wrap justify-center lg:justify-start gap-4">
-              <a
-                href="https://facebook.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-gray-800 hover:text-yellow-600 transition duration-300"
-              >
-                <FaFacebookF size={30} />
-              </a>
-              <a
-                href="https://twitter.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-gray-800 hover:text-yellow-600 transition duration-300"
-              >
-                <FaTwitter size={30} />
-              </a>
-              <a
-                href="https://instagram.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-gray-800 hover:text-yellow-600 transition duration-300"
-              >
-                <FaInstagram size={30} />
-              </a>
-              <a
-                href="https://linkedin.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-gray-800 hover:text-yellow-600 transition duration-300"
-              >
-                <FaLinkedin size={30} />
-              </a>
+      <div className="max-w-6xl mx-auto px-4 py-12">
+        <div className="grid gap-4 md:grid-cols-3 mb-16">
+          <a href={whatsappLink()} target="_blank" rel="noopener noreferrer" className="bg-white rounded-2xl p-6 shadow-sm border border-sand-dark hover:shadow-lg transition flex gap-4 items-start">
+            <div className="h-12 w-12 shrink-0 rounded-xl bg-[#25D366]/15 text-[#1ebe5b] flex items-center justify-center"><FaWhatsapp size={24} /></div>
+            <div>
+              <h2 className="font-bold text-ocean">WhatsApp</h2>
+              <p className="text-gray-600 text-sm mt-1">{SITE.phoneDisplay}</p>
+              <p className="text-coral text-sm font-semibold mt-2">Escribir ahora →</p>
             </div>
-          </div>
+          </a>
+          <a href={`mailto:${SITE.email}`} className="bg-white rounded-2xl p-6 shadow-sm border border-sand-dark hover:shadow-lg transition flex gap-4 items-start min-w-0">
+            <div className="h-12 w-12 shrink-0 rounded-xl bg-coral-light text-coral flex items-center justify-center"><FaEnvelope size={22} /></div>
+            <div className="min-w-0">
+              <h2 className="font-bold text-ocean">Correo</h2>
+              <p className="text-gray-600 text-sm mt-1 break-all">{SITE.email}</p>
+            </div>
+          </a>
+          {SITE.hours ? (
+            <div className="bg-white rounded-2xl p-6 shadow-sm border border-sand-dark flex gap-4 items-start">
+              <div className="h-12 w-12 shrink-0 rounded-xl bg-ocean/10 text-ocean flex items-center justify-center"><FaClock size={22} /></div>
+              <div>
+                <h2 className="font-bold text-ocean">Horario</h2>
+                <p className="text-gray-600 text-sm mt-1">{SITE.hours}</p>
+              </div>
+            </div>
+          ) : SITE.googleReviewUrl ? (
+            <a href={SITE.googleReviewUrl} target="_blank" rel="noopener noreferrer" className="bg-white rounded-2xl p-6 shadow-sm border border-sand-dark hover:shadow-lg transition flex gap-4 items-start">
+              <div className="h-12 w-12 shrink-0 rounded-xl bg-yellow-100 text-yellow-600 flex items-center justify-center"><FaStar size={22} /></div>
+              <div>
+                <h2 className="font-bold text-ocean">Tu opinión cuenta</h2>
+                <p className="text-gray-600 text-sm mt-1">Déjanos una reseña en Google</p>
+              </div>
+            </a>
+          ) : null}
+        </div>
+
+        <SectionTitle eyebrow="Visítanos" title="Nuestras sucursales" />
+        <div className="grid gap-6 md:grid-cols-2">
+          {SITE.locations.map(l => <LocationCard key={l.name} location={l} />)}
         </div>
       </div>
-    </section>
+    </>
   );
 };
 

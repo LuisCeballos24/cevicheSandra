@@ -1,4 +1,4 @@
-import React from 'react';
+import { getInventoryLabel } from './ventaHelpers';
 
 // Aceptar nuevas props para el cierre de caja
 const InventoryTextForm = ({
@@ -80,37 +80,7 @@ const InventoryTextForm = ({
     setClosingRegisterReport(prev => ({ ...prev, dinero: value }));
   };
 
-  const getItemDisplayName = (itemKey) => {
-    switch (itemKey) {
-      case 'nachosGrande': return 'Nachos Grandes';
-      case 'nachosPequeno': return 'Nachos Pequeños';
-      case 'vasos7oz': return 'Vasos 7oz';
-      case 'cucharas': return 'Cucharas';
-      case 'bolsitas5x10': return 'Bolsitas 5x10';
-      case 'envases16oz': return 'Envases 16oz';
-      case 'envases24oz': return 'Envases 24oz';
-      case 'uvas': return 'Uvas';
-      case 'kiwi': return 'Kiwi';
-      case 'coco': return 'Coco';
-      case 'pina': return 'Piña';
-      case 'vuelto': return 'Te dieron Vuelto?';
-      case 'nachosSinPreparar': return 'Nachos sin preparar';
-      case 'cevicheTradicionalCorvina': return 'Ceviche Tradicional Corvina';
-      case 'cevicheCamaron': return 'Ceviche Camarón';
-      case 'cevicheMixto': return 'Ceviche Mixto';
-      case 'cevicheConchaNegra': return 'Ceviche Concha Negra';
-      case 'coctelMixto': return 'Cóctel Mixto';
-      case 'coctelCamaron': return 'Cóctel Camarón';
-      case 'coctelCorvina': return 'Cóctel Corvina';
-      case 'coctelTropical': return 'Cóctel Tropical';
-      case 'cevichePulpo': return 'Ceviche Pulpo';
-      case 'cevicheCombinacion': return 'Ceviche Combinación';
-      case 'coctelPersonalizado': return 'Cóctel PERSONALIZADO';
-      case 'coctelHawaiCorvina': return 'Cóctel Hawai Corvina';
-      case 'coctelHawaiCamaronPulpo': return 'Cóctel Hawai Camarón/Pulpo';
-      default: return itemKey;
-    }
-  };
+  const getItemDisplayName = getInventoryLabel;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">

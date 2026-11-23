@@ -6,6 +6,7 @@ import OrderSender from './OrderSender'; // Asegúrate de importar OrderSender c
 import Slider from 'react-slick';
 import 'slick-carousel/slick/slick.css';
 import 'slick-carousel/slick/slick-theme.css';
+import { getMainImage } from '../useMenuData';
 
 const CevicheOrden = () => {
   const [selectedLocation, setSelectedLocation] = useState(null);
@@ -303,7 +304,7 @@ const CevicheOrden = () => {
 
 
   return (
-    <div className="p-4">
+    <div className="max-w-6xl mx-auto px-4 py-8">
       {/* Ventana emergente de éxito */}
       {showSuccessPopup && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
@@ -312,7 +313,7 @@ const CevicheOrden = () => {
             <p className="text-xl mb-4">¡Gracias por su compra, {user?.displayName}!</p>
             <button
               onClick={() => setShowSuccessPopup(false)}
-              className="bg-blue-500 text-white py-2 px-4 rounded-lg"
+              className="bg-ocean text-white py-2 px-4 rounded-full"
             >
               Cerrar
             </button>
@@ -380,13 +381,13 @@ const CevicheOrden = () => {
         </div>
       )}
       <div className="flex flex-col md:flex-row justify-between mb-6">
-        <h1 className="text-3xl font-bold">Compra Ceviche!</h1>
+        <h1 className="text-3xl md:text-4xl font-extrabold text-ocean">Ordena en línea</h1>
       </div>
 
-      <p className="mb-6 text-xl">Elige uno de nuestros ceviches</p>
+      <p className="mb-6 text-lg text-gray-600">Elige tamaño y cantidad de tus favoritos. Al final indica si necesitas entrega.</p>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {cevichesData.map((ceviche) => (
-          <div key={ceviche.id} className="bg-red-200 bg-opacity-50 p-6 rounded-lg flex flex-col md:flex-row items-start">
+          <div key={ceviche.id} className="bg-white border border-sand-dark shadow-sm p-5 rounded-2xl flex flex-col md:flex-row items-start">
             <div className="w-full mb-4 sm:mb-0 sm:w-1/2 sm:mr-4">
               {typeof ceviche.image === 'string' ? (
                 <img
@@ -410,7 +411,7 @@ const CevicheOrden = () => {
             </div>
             <div className="flex-1">
               <div className="mb-4">
-                <h2 className="text-lg font-semibold mb-2">{ceviche.name}</h2> {/* Nombre del ceviche */}
+                <h2 className="text-lg font-bold text-ocean mb-2">{ceviche.name}</h2> {/* Nombre del ceviche */}
                 <label htmlFor={`size-${ceviche.id}`} className="block text-lg font-medium mb-1">
                   Tamaño:
                 </label>
@@ -418,7 +419,7 @@ const CevicheOrden = () => {
                   id={`size-${ceviche.id}`}
                   value={selectedSizes[ceviche.id] || ''}
                   onChange={(e) => handleSizeChange(ceviche.id, e.target.value, quantities[ceviche.id] || 0)}
-                  className="border p-2 rounded w-full"
+                  className="border border-gray-300 p-2 rounded-lg w-full focus:border-coral outline-none"
                 >
                   <option value="">Seleccione tamaño</option>
                   {Object.keys(ceviche.prices).map((size) => (
@@ -437,9 +438,8 @@ const CevicheOrden = () => {
                   type="number"
                   value={quantities[ceviche.id] || ''}
                   onChange={(e) => handleQuantityChange(ceviche.id, e.target.value)}
-                  className="border p-2 rounded w-full"
+                  className="border border-gray-300 p-2 rounded-lg w-full focus:border-coral outline-none"
                 />
-                {console.log('Component rendered:', quantities[ceviche.id])}
               </div>
             </div>
           </div>
@@ -452,7 +452,7 @@ const CevicheOrden = () => {
       <Modal isOpen={isModalOpen} closeModal={closeModal} content={modalContent} />
 
       {/* Sección de Pedido Actual */}
-      <h2 className="text-xl font-bold mt-8 mb-4">Pedido Actual:</h2>
+      <h2 className="text-2xl font-extrabold text-ocean mt-10 mb-4">Tu pedido</h2>
       {order.length === 0 ? (
         <p className="text-lg font-semibold">No hay items en el pedido</p>
       ) : (
@@ -468,12 +468,12 @@ const CevicheOrden = () => {
               return (
                 <li
                   key={index}
-                  className="bg-red-200 bg-opacity-50 p-4 rounded-lg flex flex-col md:flex-row items-start justify-between shadow-md"
+                  className="bg-white border border-sand-dark p-4 rounded-2xl flex flex-col md:flex-row items-start justify-between shadow-sm"
                 >
                   {/* Imagen del Ceviche */}
                   <div className="flex-shrink-0 mb-4 md:mb-0">
                     <img
-                      src={ceviche.image} // Imagen del ceviche
+                      src={getMainImage(ceviche.image)} // Imagen del ceviche
                       alt={ceviche.name}
                       className="w-24 h-24 object-cover rounded-full shadow-lg"
                     />
@@ -487,7 +487,7 @@ const CevicheOrden = () => {
                   {/* Botón de Eliminar */}
                   <button
                     onClick={() => handleRemoveFromOrder(index)}
-                    className="mt-4 md:mt-0 bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg"
+                    className="mt-4 md:mt-0 bg-red-50 hover:bg-red-100 text-red-600 font-semibold py-2 px-4 rounded-full"
                   >
                     Eliminar
                   </button>
@@ -513,7 +513,7 @@ const CevicheOrden = () => {
     <div className="flex flex-col items-center md:items-start w-full md:w-auto mt-4">
       <button
         onClick={handleUseCurrentLocation}
-        className="bg-blue-500 text-white py-2 px-4 rounded-lg w-full md:w-auto"
+        className="bg-ocean hover:bg-ocean-dark text-white font-semibold py-2 px-5 rounded-full w-full md:w-auto"
       >
         Usar Ubicación Actual
       </button>
@@ -531,7 +531,7 @@ const CevicheOrden = () => {
         {errors && <p className="text-red-500 mb-4 text-center md:text-left">{errors}</p>}
         <button
           onClick={handleContinueOrder}
-          className="bg-green-500 text-white py-2 px-4 rounded-lg w-full md:w-auto"
+          className="bg-coral hover:bg-coral-dark text-white font-semibold py-3 px-8 rounded-full shadow-lg w-full md:w-auto"
         >
           {user ? 'Finalizar Pedido' : 'Iniciar Sesión'}
         </button>

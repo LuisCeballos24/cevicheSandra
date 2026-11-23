@@ -2,36 +2,16 @@
 @tailwind components;
 @tailwind utilities;
 
+html {
+  scroll-behavior: smooth;
+}
+
 body {
   margin: 0;
   padding: 0;
-  background-attachment: fixed;
-  position: relative;
-  z-index: 1;
-}
-
-body::before {
-  content: "";
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-image: url('/img/background.webp');
-  background-size: cover;
-  background-repeat: no-repeat;
-  background-attachment: fixed;
-  opacity: 0.4; /* Ajusta este valor para cambiar el nivel de transparencia */
-  z-index: -1;
-}
-
-.title {
-  font-family: 'Playfair Display', serif;
-}
-
-.container {
-  max-width: 100%;
-  padding: 1rem;
+  background-color: #fff7ec; /* sand */
+  color: #1f2937;
+  -webkit-font-smoothing: antialiased;
 }
 
 .map-container {
@@ -53,83 +33,7 @@ body::before {
   }
 }
 
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-}
-
-.modal-content {
-  background: #fff;
-  padding: 20px;
-  border-radius: 8px;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-  text-align: center;
-}
-
-.modal-title {
-  font-size: 1.5rem;
-  margin-bottom: 10px;
-}
-
-.modal-message {
-  font-size: 1.25rem;
-  margin-bottom: 20px;
-}
-
-.modal-close-button {
-  background: #007bff;
-  color: #fff;
-  border: none;
-  padding: 10px 20px;
-  border-radius: 5px;
-  cursor: pointer;
-  font-size: 1rem;
-}
-
-.modal-close-button:hover {
-  background: #0056b3;
-}
-
-footer {
-  background: rgba(226, 149, 120, 0.8);
-  box-shadow: none;
-  transition: box-shadow 0.3s;
-}
-
-footer:hover {
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-}
-
-.carousel {
-  display: flex;
-  overflow-x: scroll;
-  scroll-snap-type: x mandatory;
-}
-
-.carousel-slide {
-  min-width: 100%;
-  scroll-snap-align: start;
-}
-
-.carousel-slide img {
-  width: 100%;
-  height: auto;
-}
-
-@media (max-width: 768px) {
-  .mb-4 {
-    margin-bottom: 1rem; /* Ajusta según sea necesario */
-  }
-
-  .w-full {
-    width: 100%; /* Asegúrate de que el ancho se ajuste en pantallas pequeñas */
-  }
+/* Las flechas/puntos del carrusel en tono del sitio */
+.slick-dots li button:before {
+  color: #0f4c5c;
 }

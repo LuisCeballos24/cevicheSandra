@@ -1,5 +1,5 @@
 import { db } from './FirebaseConfig';
-import { collection, query, where, getDocs, Timestamp } from 'firebase/firestore';
+import { collection, query, where, getDocs, addDoc, Timestamp } from 'firebase/firestore';
 
 // Rango [inicio, fin] de un día como Timestamps de Firestore
 export const dayRange = (date = new Date()) => ({
@@ -16,6 +16,29 @@ export const ordersOfDayQuery = (date = new Date()) => {
     where("timestamp", "<=", end)
   );
 };
+
+// Documentos de hoy de un usuario en una colección con campos { user, date }
+export const fetchTodayDocs = async (collectionName, userName) => {
+  const q = query(
+    collection(db, collectionName),
+    where('user', '==', userName),
+    where('date', '==', new Date().toDateString())
+  );
+  const querySnapshot = await getDocs(q);
+  return querySnapshot.docs.map(d => d.data());
+};
+
+export const existsToday = async (collectionName, userName) =>
+  (await fetchTodayDocs(collectionName, userName)).length > 0;
+
+// Guarda un documento del día con usuario, fecha y hora
+export const saveTodayDoc = (collectionName, userName, data) =>
+  addDoc(collection(db, collectionName), {
+    user: userName,
+    date: new Date().toDateString(),
+    ...data,
+    timestamp: new Date(),
+  });
 
 // Pedidos del día de un usuario (filtrado por usuario en cliente para no requerir índice compuesto)
 export const fetchTodayOrders = async (userName) => {
@@ -38,15 +61,7 @@ export const sumReceipts = (receipts = []) =>
   ]));
 
 // Envases recibidos hoy por un usuario
-export const fetchTodayReceipts = async (userName) => {
-  const q = query(
-    collection(db, 'container_receipts'),
-    where('user', '==', userName),
-    where('date', '==', new Date().toDateString())
-  );
-  const querySnapshot = await getDocs(q);
-  return querySnapshot.docs.map(d => d.data());
-};
+export const fetchTodayReceipts = (userName) => fetchTodayDocs('container_receipts', userName);
 
 // Cuadre de envases: (apertura + recibidos - cierre) = usados, comparado con lo vendido en el sistema.
 // faltan > 0 significa envases usados que no se reportaron como venta.

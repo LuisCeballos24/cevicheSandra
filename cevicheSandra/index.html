@@ -2,12 +2,95 @@
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/png" href="/favicon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Ceviches-Cocteles D.Sandra</title>
+    <title>Ceviches y Cócteles Donde Sandra | Ceviche fresco en Panamá</title>
+    <meta name="description" content="Ceviches y cócteles de mariscos frescos en Panamá desde 2019. Corvina, camarón, langostino, pulpo, concha negra y mixtos en 7oz, 16oz, 24oz, medio galón y galón. Pide por WhatsApp en Altos de la Calzada y Praderas de San Lorenzo." />
+    <meta name="robots" content="index, follow" />
+    <meta name="theme-color" content="#0f4c5c" />
+    <link rel="canonical" href="https://propios-c6d5c.web.app/" />
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <link rel="apple-touch-icon" href="/img/logo.webp" />
+
+    <!-- Vista previa al compartir (WhatsApp, Facebook, etc.) -->
+    <meta property="og:type" content="restaurant" />
+    <meta property="og:locale" content="es_PA" />
+    <meta property="og:site_name" content="Ceviches y Cócteles Donde Sandra" />
+    <meta property="og:title" content="Ceviches y Cócteles Donde Sandra | Ceviche fresco en Panamá" />
+    <meta property="og:description" content="Ceviches y cócteles de mariscos frescos en Panamá. Pide por WhatsApp." />
+    <meta property="og:url" content="https://propios-c6d5c.web.app/" />
+    <meta property="og:image" content="https://propios-c6d5c.web.app/img/og-image.jpg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <!-- Fuentes -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" />
+
+    <!-- Datos estructurados para Google (restaurante y sucursales) -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "Organization",
+          "@id": "https://propios-c6d5c.web.app/#org",
+          "name": "Ceviches y Cócteles Donde Sandra",
+          "url": "https://propios-c6d5c.web.app/",
+          "logo": "https://propios-c6d5c.web.app/img/logo.webp",
+          "email": "cevichesycoctelesdondesandra@gmail.com",
+          "telephone": "+507-6796-1550",
+          "foundingDate": "2019"
+        },
+        {
+          "@type": "Restaurant",
+          "name": "Ceviches y Cócteles Donde Sandra - Altos de la Calzada",
+          "parentOrganization": { "@id": "https://propios-c6d5c.web.app/#org" },
+          "url": "https://propios-c6d5c.web.app/",
+          "image": "https://propios-c6d5c.web.app/img/og-image.jpg",
+          "telephone": "+507-6796-1550",
+          "servesCuisine": ["Ceviche", "Mariscos", "Cócteles de mariscos"],
+          "priceRange": "$",
+          "hasMenu": "https://propios-c6d5c.web.app/menu",
+          "acceptsReservations": false,
+          "address": {
+            "@type": "PostalAddress",
+            "streetAddress": "Altos de la Calzada",
+            "addressLocality": "Panamá",
+            "addressRegion": "Panamá",
+            "addressCountry": "PA"
+          }
+        },
+        {
+          "@type": "Restaurant",
+          "name": "Ceviches y Cócteles Donde Sandra - Praderas de San Lorenzo",
+          "parentOrganization": { "@id": "https://propios-c6d5c.web.app/#org" },
+          "url": "https://propios-c6d5c.web.app/",
+          "image": "https://propios-c6d5c.web.app/img/og-image.jpg",
+          "telephone": "+507-6796-1550",
+          "servesCuisine": ["Ceviche", "Mariscos", "Cócteles de mariscos"],
+          "priceRange": "$",
+          "hasMenu": "https://propios-c6d5c.web.app/menu",
+          "acceptsReservations": false,
+          "address": {
+            "@type": "PostalAddress",
+            "streetAddress": "Praderas de San Lorenzo",
+            "addressLocality": "Caimitillo",
+            "addressRegion": "Panamá",
+            "addressCountry": "PA"
+          }
+        }
+      ]
+    }
+    </script>
   </head>
   <body>
     <div id="root"></div>
+    <noscript>
+      <h1>Ceviches y Cócteles Donde Sandra</h1>
+      <p>Ceviches y cócteles de mariscos frescos en Panamá. Sucursales en Altos de la Calzada y Praderas de San Lorenzo. Pedidos por WhatsApp: +507 6796-1550.</p>
+    </noscript>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
