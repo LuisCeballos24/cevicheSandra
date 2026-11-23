@@ -65,5 +65,6 @@ export const buildWebOrderEmail = ({ customer, order, total, ...deliveryInfo }) 
   customer.notes ? `Notas: ${customer.notes}` : null,
   '',
   `Te confirmaremos por WhatsApp (${SITE.phoneDisplay}).`,
+  SITE.googleReviewUrl ? `\nCuando lo pruebes, ¡cuéntanos qué te pareció! Tu reseña en Google nos ayuda mucho: ${SITE.googleReviewUrl}` : null,
   SITE.name,
 ].filter(line => line !== null).join('\n');

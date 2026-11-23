@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { collection, addDoc } from 'firebase/firestore';
-import { FaWhatsapp, FaSearch, FaPlus, FaMinus, FaTrash, FaShoppingBag, FaTimes, FaStore, FaMotorcycle, FaLocationArrow, FaCheckCircle, FaChevronUp } from 'react-icons/fa';
+import { FaWhatsapp, FaSearch, FaPlus, FaMinus, FaTrash, FaShoppingBag, FaTimes, FaStore, FaMotorcycle, FaLocationArrow, FaCheckCircle, FaChevronUp, FaStar } from 'react-icons/fa';
 import { db } from '../config/firebase';
 import { SITE, whatsappLink } from '../config/siteConfig';
 import { useMenuData, MENU_CATEGORIES, getCategory, getMainImage, formatPrice, sizeLabel } from '../hooks/useMenuData';
@@ -155,6 +155,16 @@ const CevicheOrden = () => {
         <a href={sentLink} className="mt-8 inline-flex items-center gap-2 bg-[#25D366] text-white font-semibold px-7 py-3.5 rounded-full shadow-lg">
           <FaWhatsapp size={20} /> Abrir WhatsApp
         </a>
+        {SITE.googleReviewUrl && (
+          <div className="mt-10 bg-white rounded-3xl shadow-sm p-6">
+            <div className="flex justify-center gap-1 text-yellow-400 mb-2">{[0, 1, 2, 3, 4].map(i => <FaStar key={i} />)}</div>
+            <p className="font-bold text-ocean">¿Ya nos probaste?</p>
+            <p className="text-sm text-gray-600 mt-1">Cuando disfrutes tu pedido, cuéntanos qué te pareció. Tu opinión en Google nos ayuda muchísimo.</p>
+            <a href={SITE.googleReviewUrl} target="_blank" rel="noopener noreferrer" className="mt-4 inline-flex items-center gap-2 bg-ocean hover:bg-ocean-dark text-white font-semibold px-6 py-3 rounded-full transition">
+              <FaStar className="text-yellow-300" /> Dejar mi reseña
+            </a>
+          </div>
+        )}
         <div className="mt-6"><Link to="/" className="text-ocean font-semibold">Volver al inicio</Link></div>
       </div>
     );
