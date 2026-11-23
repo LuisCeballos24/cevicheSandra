@@ -1,22 +1,22 @@
 import { useState, useEffect, lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Route, Routes, useLocation, Link } from 'react-router-dom';
 import { getAuth, signInWithPopup, signOut } from 'firebase/auth';
-import { googleProvider } from './components/FirebaseConfig';
-import Header from './components/Header';
-import Home from './components/Home';
-import Footer from './components/Footer';
-import { FloatingWhatsApp } from './components/SiteUi';
-import { usePageMeta } from './usePageMeta';
+import { googleProvider } from './config/firebase';
+import Header from './layout/Header';
+import Home from './pages/Home';
+import Footer from './layout/Footer';
+import { FloatingWhatsApp } from './layout/SiteUi';
+import { usePageMeta } from './hooks/usePageMeta';
 
 // Cada página se descarga solo cuando se visita
-const CevicheOrden = lazy(() => import('./components/CevicheOrden'));
-const Contacto = lazy(() => import('./components/Contacto'));
-const About = lazy(() => import('./components/About'));
-const Menu = lazy(() => import('./components/Menu'));
-const Venta = lazy(() => import('./components/CevicheVenta'));
-const CevicheDetail = lazy(() => import('./components/CevicheDetail'));
-const MetricasNegocio = lazy(() => import('./components/MetricasNegocio'));
-const ResumenVentas = lazy(() => import('./components/ResumenVentas'));
+const CevicheOrden = lazy(() => import('./shop/CevicheOrden'));
+const Contacto = lazy(() => import('./pages/Contacto'));
+const About = lazy(() => import('./pages/About'));
+const Menu = lazy(() => import('./pages/Menu'));
+const Venta = lazy(() => import('./ventas/CevicheVenta'));
+const CevicheDetail = lazy(() => import('./pages/CevicheDetail'));
+const MetricasNegocio = lazy(() => import('./admin/MetricasNegocio'));
+const ResumenVentas = lazy(() => import('./admin/ResumenVentas'));
 
 // Páginas internas (ventas y reportes) se muestran sin el header/footer del sitio
 const INTERNAL_PATHS = ['/venta', '/resumen', '/metricas'];
