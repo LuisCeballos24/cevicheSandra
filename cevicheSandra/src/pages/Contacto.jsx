@@ -1,4 +1,10 @@
-import { FaWhatsapp, FaEnvelope, FaClock, FaStar } from 'react-icons/fa';
+import { FaWhatsapp, FaEnvelope, FaClock, FaStar, FaInstagram, FaTiktok, FaFacebookF } from 'react-icons/fa';
+
+const SOCIALS = [
+  { key: 'instagram', label: 'Instagram', icon: FaInstagram, className: 'bg-gradient-to-br from-[#f58529] via-[#dd2a7b] to-[#8134af]' },
+  { key: 'tiktok', label: 'TikTok', icon: FaTiktok, className: 'bg-black' },
+  { key: 'facebook', label: 'Facebook', icon: FaFacebookF, className: 'bg-[#1877f2]' },
+].filter(s => SITE.social[s.key]);
 import { SITE, whatsappLink } from '../config/siteConfig';
 import { usePageMeta } from '../hooks/usePageMeta';
 import { PageHero, LocationCard, SectionTitle } from '../layout/SiteUi';
@@ -49,6 +55,21 @@ const Contacto = () => {
             </a>
           ) : null}
         </div>
+
+        {SOCIALS.length > 0 && (
+          <div className="text-center mb-16">
+            <p className="font-script text-2xl text-coral">Síguenos</p>
+            <h2 className="text-2xl md:text-3xl font-extrabold text-ocean mt-1">Mira lo que preparamos cada día</h2>
+            <div className="mt-6 flex flex-wrap justify-center gap-3">
+              {SOCIALS.map(({ key, label, icon: Icon, className }) => (
+                <a key={key} href={SITE.social[key]} target="_blank" rel="noopener noreferrer"
+                  className={`inline-flex items-center gap-2 text-white font-semibold px-6 py-3 rounded-full shadow-lg hover:-translate-y-0.5 transition ${className}`}>
+                  <Icon size={18} /> {label}
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
 
         <SectionTitle eyebrow="Visítanos" title="Nuestras sucursales" />
         <div className="grid gap-6 md:grid-cols-2">

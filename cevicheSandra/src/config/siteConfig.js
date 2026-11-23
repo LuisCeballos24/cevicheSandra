@@ -10,16 +10,16 @@ export const SITE = {
   phoneDisplay: '+507 6796-1550',
   since: 2019,
   // Enlace del perfil de Google Business (ej: https://g.page/r/XXXX). Vacío = no se muestra.
-  googleBusinessUrl: '',
+  googleBusinessUrl: 'https://share.google/DWYD5YMKKSdwqj6F5',
   // Enlace para dejar reseña (ej: https://g.page/r/XXXX/review). Vacío = no se muestra.
-  googleReviewUrl: '',
+  googleReviewUrl: 'https://share.google/DWYD5YMKKSdwqj6F5',
   // Horario visible en el sitio. Vacío = no se muestra.
   hours: '',
   // Redes sociales. Vacío = no se muestra.
   social: {
-    instagram: '',
+    instagram: 'https://www.instagram.com/ceviche.sandra/',
     facebook: '',
-    tiktok: '',
+    tiktok: 'https://www.tiktok.com/@ceviches.donde.sa',
   },
   // Delivery: costo aproximado por km en línea recta desde la sucursal más cercana
   deliveryCostPerKm: 1.5,
