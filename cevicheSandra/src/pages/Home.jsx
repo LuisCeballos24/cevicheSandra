@@ -4,6 +4,7 @@ import { SITE } from '../config/siteConfig';
 import { usePageMeta } from '../hooks/usePageMeta';
 import { useMenuData } from '../hooks/useMenuData';
 import { SectionTitle, WhatsAppButton, ProductCard, LocationCard, Reveal, Wave, Marquee } from '../layout/SiteUi';
+import Faq from '../layout/Faq';
 
 // Productos destacados en la portada (ids de cevichesData.json) y su etiqueta
 const FEATURED = [
@@ -200,6 +201,8 @@ const Home = () => {
           {SITE.locations.map((l, i) => <Reveal key={l.name} delay={i * 120}><LocationCard location={l} /></Reveal>)}
         </div>
       </section>
+
+      <Faq menu={menu} />
 
       {/* LLAMADO FINAL */}
       <section className="max-w-6xl mx-auto px-4 pt-20">

@@ -110,7 +110,8 @@ export const LocationCard = ({ location }) => (
     <div className="p-6 flex-1 flex flex-col">
       <h3 className="font-extrabold text-xl text-ocean flex items-center gap-2"><FaMapMarkerAlt className="text-coral" /> {location.name}</h3>
       <p className="text-gray-600 text-sm mt-1">{location.area}</p>
-      {SITE.hours && <p className="text-gray-600 text-sm mt-1">Horario: {SITE.hours}</p>}
+      {SITE.hours && <p className="text-gray-600 text-sm mt-1">🕒 {SITE.hours}</p>}
+      {SITE.hoursNote && <p className="text-gray-400 text-xs mt-1">{SITE.hoursNote}</p>}
       <div className="mt-5 flex flex-wrap gap-2">
         <a
           href={mapsDirectionsLink(location.mapsQuery)}
@@ -120,6 +121,11 @@ export const LocationCard = ({ location }) => (
         >
           <FaDirections /> Cómo llegar
         </a>
+        {location.slug && (
+          <Link to={`/sucursales/${location.slug}`} className="inline-flex items-center gap-2 bg-coral-light text-coral-dark hover:bg-coral hover:text-white text-sm font-semibold px-5 py-2.5 rounded-full transition">
+            Ver sucursal
+          </Link>
+        )}
         {SITE.googleBusinessUrl && (
           <a
             href={SITE.googleBusinessUrl}

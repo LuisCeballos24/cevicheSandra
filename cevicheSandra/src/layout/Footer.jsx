@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { FaFacebookF, FaInstagram, FaTiktok, FaMapMarkerAlt, FaWhatsapp, FaEnvelope, FaGoogle, FaStar } from 'react-icons/fa';
-import { SITE, whatsappLink, mapsDirectionsLink } from '../config/siteConfig';
+import { SITE, whatsappLink } from '../config/siteConfig';
 import { Wave } from './SiteUi';
 
 const logo = '/img/logo.webp';
@@ -26,14 +26,14 @@ const Footer = () => {
           <ul className="space-y-3 text-sm">
             {SITE.locations.map(l => (
               <li key={l.name}>
-                <a href={mapsDirectionsLink(l.mapsQuery)} target="_blank" rel="noopener noreferrer" className="flex items-start gap-2 hover:text-coral transition">
+                <Link to={`/sucursales/${l.slug}`} className="flex items-start gap-2 hover:text-coral transition">
                   <FaMapMarkerAlt className="mt-1 shrink-0 text-coral" />
                   <span><span className="text-white font-semibold">{l.name}</span><br />{l.area}</span>
-                </a>
+                </Link>
               </li>
             ))}
           </ul>
-          {SITE.hours && <p className="text-sm mt-3">Horario: {SITE.hours}</p>}
+          {SITE.hours && <p className="text-sm mt-3">🕒 {SITE.hours}</p>}
         </div>
 
         <div>

@@ -17,6 +17,7 @@ const Venta = lazy(() => import('./ventas/CevicheVenta'));
 const CevicheDetail = lazy(() => import('./pages/CevicheDetail'));
 const MetricasNegocio = lazy(() => import('./admin/MetricasNegocio'));
 const ResumenVentas = lazy(() => import('./admin/ResumenVentas'));
+const Sucursal = lazy(() => import('./pages/Sucursal'));
 
 // Páginas internas (ventas y reportes) se muestran sin el header/footer del sitio
 const INTERNAL_PATHS = ['/venta', '/resumen', '/metricas'];
@@ -80,6 +81,7 @@ const AppLayout = ({ user, onLogin, onLogout }) => {
           <Route path="/ceviche/:id" element={<CevicheDetail />} />
           <Route path="/metricas" element={<MetricasNegocio />} />
           <Route path="/resumen" element={<ResumenVentas />} />
+          <Route path="/sucursales/:slug" element={<Sucursal />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </Suspense>
