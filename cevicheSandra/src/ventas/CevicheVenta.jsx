@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import InventoryTextForm from './InventoryTextForm';
-import { ClosingConfirmModal, DuplicateOrderModal, ReceiptModal } from './VentaModals';
+import { ClosingConfirmModal, DuplicateOrderModal, ReceiptModal, WhatsAppFallbackModal } from './VentaModals';
 import {
   fetchTodayOrders, fetchTodayDocs, fetchTodayReceipts, existsToday, saveTodayDoc,
   sumTotals, sumReceipts, buildContainerCheck, CONTAINERS,
@@ -67,6 +67,11 @@ const CevicheVenta = () => {
   const [closingModalError, setClosingModalError] = useState(null);
   const [showClosingConfirm, setShowClosingConfirm] = useState(false);
 
+  // WhatsApp pendiente de enviar con un toque (si el celular bloqueó la apertura automática)
+  const [pendingWhatsApp, setPendingWhatsApp] = useState(null);
+  const [formSending, setFormSending] = useState(false);
+  const [checkingClosing, setCheckingClosing] = useState(false);
+
   // Aviso de posible pedido repetido (pedido anterior idéntico)
   const [duplicateWarning, setDuplicateWarning] = useState(null);
 
@@ -99,6 +104,13 @@ const CevicheVenta = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Los avisos de error se ocultan solos (se muestran arriba, visibles también en el celular)
+  useEffect(() => {
+    if (!errors || !user) return;
+    const timer = setTimeout(() => setErrors(null), 7000);
+    return () => clearTimeout(timer);
+  }, [errors, user]);
+
   // C) Totales del sistema: solo se cargan con el cierre abierto (que se hace una sola vez al día)
   useEffect(() => {
     if (!showCloseRegisterModal || !user?.name) return;
@@ -128,6 +140,13 @@ const CevicheVenta = () => {
     acc[i.cevicheId] = (acc[i.cevicheId] || 0) + i.quantity;
     return acc;
   }, {}), [order]);
+
+  // Abre WhatsApp. Android/iPhone bloquean ventanas abiertas después de esperar a internet;
+  // en ese caso se muestra un botón para enviarlo con un toque.
+  const openWhatsApp = (link, title) => {
+    const win = window.open(link, '_blank');
+    if (!win) setPendingWhatsApp({ link, title });
+  };
 
   // ==========================================
   // 3. SESIÓN
@@ -241,9 +260,9 @@ const CevicheVenta = () => {
         change: cashValue === null ? null : cashValue - total,
       });
 
-      window.open(whatsappLink(buildOrderMessage({
+      openWhatsApp(whatsappLink(buildOrderMessage({
         userName: user.name, order, total, paymentMethod, isDelivery, cashReceived: cashValue, isPossibleDuplicate,
-      })), '_blank');
+      })), 'Pedido guardado');
 
       // Resetear
       setOrder([]);
@@ -300,29 +319,49 @@ const CevicheVenta = () => {
   // ==========================================
 
   const handleSendInventoryReport = async () => {
+    if (formSending) return;
+    setFormSending(true);
     try {
       await saveTodayDoc('daily_inventory_reports', user.name, { inventory: inventoryDailyReport });
-      window.open(whatsappLink(buildInventoryMessage({ userName: user.name, inventory: inventoryDailyReport })), '_blank');
+      openWhatsApp(whatsappLink(buildInventoryMessage({ userName: user.name, inventory: inventoryDailyReport })), 'Inventario guardado');
       setShowInventoryModal(false);
       setInventoryModalError(null);
     } catch (e) {
       console.error('Error inventario:', e);
       setInventoryModalError('Error al enviar: ' + e.message);
+    } finally {
+      setFormSending(false);
     }
   };
 
   // Abrir Cierre de Caja: solo una vez al día y con aviso previo
   const handleOpenClosing = async () => {
+    if (checkingClosing) return;
+    setCheckingClosing(true);
+    setErrors(null);
     try {
-      if (await existsToday('daily_closing_reports', user.name)) {
-        setErrors('El cierre de caja de hoy ya fue enviado.');
+      const [sentReport] = await fetchTodayDocs('daily_closing_reports', user.name);
+      if (sentReport) {
+        // Ya se cerró hoy: se ofrece reenviar el mensaje por si WhatsApp no se abrió la primera vez
+        setPendingWhatsApp({
+          title: 'El cierre de hoy ya fue enviado',
+          text: 'Si el mensaje no le llegó a Sandra, puedes reenviarlo.',
+          link: whatsappLink(buildClosingMessage({
+            userName: user.name,
+            systemTotals: sentReport.systemTotals,
+            cashReported: sentReport.cashReported,
+            containerCheck: sentReport.containerCheck || [],
+            inventory: sentReport.finalInventory || {},
+          })),
+        });
         return;
       }
-      setErrors(null);
       setShowClosingConfirm(true);
     } catch (e) {
       console.error(e);
-      setErrors('No se pudo verificar el cierre de caja. Intenta de nuevo.');
+      setErrors('No se pudo verificar el cierre de caja. Revisa el internet e intenta de nuevo.');
+    } finally {
+      setCheckingClosing(false);
     }
   };
 
@@ -341,6 +380,8 @@ const CevicheVenta = () => {
   };
 
   const handleSendClosingReport = async () => {
+    if (formSending) return;
+    setFormSending(true);
     try {
       const cashReported = parseFloat(closingRegisterReport.dinero);
       if (closingRegisterReport.dinero === '' || isNaN(cashReported)) {
@@ -379,13 +420,16 @@ const CevicheVenta = () => {
         finalInventory: inventoryDailyReport,
       });
 
-      window.open(whatsappLink(buildClosingMessage({
+      openWhatsApp(whatsappLink(buildClosingMessage({
         userName: user.name, systemTotals, cashReported, containerCheck, inventory: inventoryDailyReport,
-      })), '_blank');
+      })), 'Cierre de caja guardado');
       setShowCloseRegisterModal(false);
       setClosingModalError(null);
     } catch (e) {
-      setClosingModalError(e.message);
+      console.error(e);
+      setClosingModalError('No se pudo enviar el cierre. Revisa el internet e intenta de nuevo.');
+    } finally {
+      setFormSending(false);
     }
   };
 
@@ -415,6 +459,7 @@ const CevicheVenta = () => {
               setInventoryDailyReport={setInventoryDailyReport}
               onSubmit={handleSendInventoryReport}
               error={inventoryModalError}
+              submitting={formSending}
            />;
   }
 
@@ -425,6 +470,7 @@ const CevicheVenta = () => {
               setInventoryDailyReport={setInventoryDailyReport}
               onSubmit={handleSendClosingReport}
               error={closingModalError}
+              submitting={formSending}
               isClosingReport={true}
               dailyTotals={dailyTotals}
               setClosingRegisterReport={setClosingRegisterReport}
@@ -447,15 +493,16 @@ const CevicheVenta = () => {
             <h1 className="text-lg font-black text-gray-800 leading-tight">Ventas</h1>
             <p className="text-xs text-orange-600 font-semibold truncate">{user.name}</p>
           </div>
-          <div className="flex items-center gap-2">
-            <button onClick={handleOpenReceipt} className="flex items-center gap-2 px-3 py-2 text-sm font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg" title="Envases recibidos">
-              <FaBoxOpen /> <span className="hidden sm:inline">Recibí envases</span>
+          {/* Botones grandes y con texto también en el celular (fáciles de tocar) */}
+          <div className="flex items-stretch gap-1.5 sm:gap-2">
+            <button onClick={handleOpenReceipt} className="flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-2 min-w-[58px] min-h-[48px] px-2 sm:px-3 py-1.5 text-[11px] sm:text-sm font-semibold text-gray-700 bg-gray-100 active:bg-gray-300 hover:bg-gray-200 rounded-xl" aria-label="Envases recibidos">
+              <FaBoxOpen size={18} /> <span><span className="sm:hidden">Envases</span><span className="hidden sm:inline">Recibí envases</span></span>
             </button>
-            <button onClick={handleOpenClosing} className="flex items-center gap-2 px-3 py-2 text-sm font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg" title="Cierre de caja">
-              <FaCashRegister /> <span className="hidden sm:inline">Cierre</span>
+            <button onClick={handleOpenClosing} disabled={checkingClosing} className="flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-2 min-w-[58px] min-h-[48px] px-2 sm:px-3 py-1.5 text-[11px] sm:text-sm font-bold text-white bg-orange-500 active:bg-orange-700 hover:bg-orange-600 disabled:opacity-60 rounded-xl" aria-label="Cierre de caja">
+              <FaCashRegister size={18} /> <span>{checkingClosing ? '...' : 'Cierre'}</span>
             </button>
-            <button onClick={handleLogout} className="flex items-center gap-2 px-3 py-2 text-sm font-semibold text-red-600 bg-red-50 hover:bg-red-100 rounded-lg" title="Salir">
-              <FaSignOutAlt /> <span className="hidden sm:inline">Salir</span>
+            <button onClick={handleLogout} className="flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-2 min-w-[52px] min-h-[48px] px-2 sm:px-3 py-1.5 text-[11px] sm:text-sm font-semibold text-red-600 bg-red-50 active:bg-red-200 hover:bg-red-100 rounded-xl" aria-label="Salir">
+              <FaSignOutAlt size={18} /> <span>Salir</span>
             </button>
           </div>
         </div>
@@ -651,7 +698,6 @@ const CevicheVenta = () => {
               {loading ? 'Enviando...' : <><FaWhatsapp size={20}/> Confirmar Pedido · ${grandTotal.toFixed(2)}</>}
             </button>
 
-            {errors && <p className="text-red-500 text-xs text-center">{errors}</p>}
           </div>
         </div>
       </aside>
@@ -675,7 +721,19 @@ const CevicheVenta = () => {
         <DuplicateOrderModal duplicate={duplicateWarning} onCancel={() => setDuplicateWarning(null)} onConfirm={() => submitOrder(true)} />
       )}
 
+      {pendingWhatsApp && (
+        <WhatsAppFallbackModal pending={pendingWhatsApp} onClose={() => setPendingWhatsApp(null)} />
+      )}
+
       {successMessage && <div className="fixed top-4 left-1/2 -translate-x-1/2 md:left-auto md:translate-x-0 md:right-[25rem] bg-green-600 text-white px-6 py-3 rounded-xl shadow-xl z-[120] font-semibold">{successMessage}</div>}
+
+      {/* Avisos de error arriba: visibles aunque el carrito esté cerrado en el celular */}
+      {errors && (
+        <div role="alert" className="fixed top-4 left-4 right-4 md:left-auto md:right-[25rem] md:max-w-md bg-red-600 text-white px-5 py-3 rounded-xl shadow-xl z-[120] font-semibold flex items-start gap-3">
+          <span className="flex-1">{errors}</span>
+          <button onClick={() => setErrors(null)} className="text-white/80 hover:text-white text-xl leading-none" aria-label="Cerrar aviso">×</button>
+        </div>
+      )}
     </div>
   );
 };

@@ -1,4 +1,4 @@
-import { FaBoxOpen } from 'react-icons/fa';
+import { FaBoxOpen, FaWhatsapp } from 'react-icons/fa';
 import { CONTAINERS } from './ventasUtils';
 import { money } from './ventaHelpers';
 
@@ -44,6 +44,24 @@ export const DuplicateOrderModal = ({ duplicate, onCancel, onConfirm }) => (
       ))}
     </ul>
     <ModalActions onCancel={onCancel} onConfirm={onConfirm} confirmLabel="Enviar igual" confirmClass="bg-yellow-500 hover:bg-yellow-600" />
+  </Modal>
+);
+
+// Si el celular bloqueó la apertura automática de WhatsApp, se envía con un toque
+export const WhatsAppFallbackModal = ({ pending, onClose }) => (
+  <Modal>
+    <h3 className="text-lg font-bold text-green-700 mb-2">✅ {pending.title}</h3>
+    <p className="text-sm text-gray-600 mb-4">{pending.text || 'Toca el botón para enviar el mensaje por WhatsApp.'}</p>
+    <a
+      href={pending.link}
+      target="_blank"
+      rel="noopener noreferrer"
+      onClick={onClose}
+      className="flex items-center justify-center gap-2 w-full py-4 rounded-xl font-bold text-white bg-green-600 hover:bg-green-700 text-lg"
+    >
+      <FaWhatsapp size={22} /> Enviar por WhatsApp
+    </a>
+    <button onClick={onClose} className="w-full mt-3 py-2 rounded-lg font-medium text-gray-600 bg-gray-100 hover:bg-gray-200">Cerrar</button>
   </Modal>
 );
 

@@ -9,6 +9,7 @@ const InventoryTextForm = ({
   isClosingReport = false, // Nueva prop: true si es para cierre de caja
   dailyTotals = { efectivo: 0, yappy: 0, tarjeta: 0 }, // Totales de venta del día
   setClosingRegisterReport = () => {}, // Función para actualizar el campo de dinero
+  submitting = false, // Evita doble envío mientras se guarda
 }) => {
 
   // Listado de claves que son ceviches/cócteles
@@ -205,9 +206,10 @@ const InventoryTextForm = ({
 
         <button
           onClick={onSubmit}
-          className="bg-orange-600 text-white px-6 py-3 rounded-xl w-full text-lg font-semibold hover:bg-orange-700 transition-colors duration-200 mt-4"
+          disabled={submitting}
+          className="bg-orange-600 text-white px-6 py-4 rounded-xl w-full text-lg font-semibold hover:bg-orange-700 disabled:opacity-60 transition-colors duration-200 mt-4"
         >
-          {isClosingReport ? 'Enviar Cierre de Caja' : 'Enviar Reporte y Abrir Día'}
+          {submitting ? 'Enviando...' : isClosingReport ? 'Enviar Cierre de Caja' : 'Enviar Reporte y Abrir Día'}
         </button>
       </div>
     </div>
