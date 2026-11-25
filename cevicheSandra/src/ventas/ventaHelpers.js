@@ -132,6 +132,19 @@ export const INVENTORY_LABELS = {
 
 export const getInventoryLabel = (key) => INVENTORY_LABELS[key] || key;
 
+// Campos del inventario que faltan por llenar (cantidades vacías o ceviches sin nivel marcado).
+// Las casillas (uvas, kiwi...) no cuentan: sin marcar significa "sí hay".
+export const findMissingInventory = (inventory) => Object.entries(inventory)
+  .filter(([, value]) => {
+    if (typeof value === 'boolean') return false;
+    if (typeof value === 'object' && value !== null) {
+      return !(value.galonLleno || value.galonMedioLleno || value.galonMedio || value.galonUnCuarto || value.noHay);
+    }
+    const n = Number(value);
+    return value === '' || value == null || String(value).trim() === '' || isNaN(n) || n < 0;
+  })
+  .map(([key]) => key);
+
 const cevicheLevel = (value) => {
   if (value.galonLleno) return 'Galón Lleno (4/4)';
   if (value.galonMedioLleno) return 'Casi Lleno (3/4)';

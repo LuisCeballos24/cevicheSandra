@@ -1,4 +1,5 @@
-import { getInventoryLabel } from './ventaHelpers';
+import { useState } from 'react';
+import { getInventoryLabel, findMissingInventory } from './ventaHelpers';
 
 // Aceptar nuevas props para el cierre de caja
 const InventoryTextForm = ({
@@ -10,7 +11,15 @@ const InventoryTextForm = ({
   dailyTotals = { efectivo: 0, yappy: 0, tarjeta: 0 }, // Totales de venta del día
   setClosingRegisterReport = () => {}, // Función para actualizar el campo de dinero
   submitting = false, // Evita doble envío mientras se guarda
+  missingFields = [], // Campos que faltaban al intentar enviar (se marcan en rojo)
 }) => {
+  const [cash, setCash] = useState('');
+
+  // Un campo se marca en rojo si faltaba al enviar y todavía no se ha llenado
+  const stillMissing = new Set(findMissingInventory(inventoryDailyReport));
+  const isMissing = (key) => missingFields.includes(key) && stillMissing.has(key);
+  const cashMissing = missingFields.includes('dinero') && (cash === '' || isNaN(parseFloat(cash)) || parseFloat(cash) < 0);
+  const pendingCount = stillMissing.size + (isClosingReport && (cash === '' || isNaN(parseFloat(cash))) ? 1 : 0);
 
   // Listado de claves que son ceviches/cócteles
   const cevicheKeys = [
@@ -78,6 +87,7 @@ const InventoryTextForm = ({
   // Manejador para el campo de dinero en el cierre de caja
   const handleMoneyInputChange = (e) => {
     const value = e.target.value;
+    setCash(value);
     setClosingRegisterReport(prev => ({ ...prev, dinero: value }));
   };
 
@@ -102,16 +112,18 @@ const InventoryTextForm = ({
             <p className="text-blue-700 font-semibold">Efectivo: <span className="font-bold text-lg">${dailyTotals.efectivo.toFixed(2)}</span></p>
             <p className="text-blue-700 font-semibold">Yappy: <span className="font-bold text-lg">${dailyTotals.yappy.toFixed(2)}</span></p>
             <p className="text-blue-700 font-semibold">Tarjeta: <span className="font-bold text-lg">${dailyTotals.tarjeta.toFixed(2)}</span></p>
-            <div className="mt-4">
+            <div id="field-dinero" className="mt-4">
               <label htmlFor="dinero" className="block text-lg font-semibold mb-2 text-gray-800">
-                Dinero en Caja (físico):
+                Dinero en Caja (físico): <span className="text-red-600">*</span>
               </label>
               <input
                 id="dinero"
                 type="number"
+                inputMode="decimal"
                 placeholder="Ingresa el efectivo"
+                value={cash}
                 onChange={handleMoneyInputChange}
-                className="w-full p-2 border rounded-lg focus:ring-green-500 focus:border-green-500 text-lg font-bold"
+                className={`w-full p-2 border rounded-lg focus:ring-green-500 focus:border-green-500 text-lg font-bold ${cashMissing ? 'border-2 border-red-500 bg-red-50' : ''}`}
                 min="0"
                 step="0.01"
               />
@@ -125,10 +137,20 @@ const InventoryTextForm = ({
 
         {/* Iteración de items */}
         {Object.keys(inventoryDailyReport).map((itemKey) => (
-          <div key={itemKey} className="mb-4 p-3 border rounded-lg bg-red-50">
+          <div
+            key={itemKey}
+            id={`field-${itemKey}`}
+            className={`mb-4 p-3 rounded-lg bg-red-50 ${isMissing(itemKey) ? 'border-2 border-red-500 ring-2 ring-red-200' : 'border'}`}
+          >
             <label htmlFor={itemKey} className="block text-lg font-semibold mb-2 text-gray-800">
               {getItemDisplayName(itemKey)}:
+              {typeof inventoryDailyReport[itemKey] !== 'boolean' && <span className="text-red-600"> *</span>}
             </label>
+            {isMissing(itemKey) && (
+              <p className="text-red-600 text-sm font-bold mb-2">
+                {typeof inventoryDailyReport[itemKey] === 'object' ? '⚠️ Marca el nivel del galón' : '⚠️ Escribe la cantidad (pon 0 si no hay)'}
+              </p>
+            )}
             
             {cevicheKeys.includes(itemKey) ? (
               <div className="flex flex-col gap-3">
@@ -192,7 +214,8 @@ const InventoryTextForm = ({
               <input
                 id={itemKey}
                 type="number"
-                placeholder="Cantidad"
+                inputMode="numeric"
+                placeholder="Cantidad (0 si no hay)"
                 value={inventoryDailyReport[itemKey]}
                 onChange={(e) => handleInputChange(itemKey, e)}
                 className="w-full p-2 border rounded-lg focus:ring-orange-500 focus:border-orange-500"
@@ -202,7 +225,10 @@ const InventoryTextForm = ({
           </div>
         ))}
 
-        {error && <p className="text-red-500 text-center mb-4">{error}</p>}
+        {error && <p className="text-red-600 font-semibold text-center mb-4 p-3 bg-red-50 border border-red-300 rounded-lg">{error}</p>}
+        {!error && pendingCount > 0 && (
+          <p className="text-gray-500 text-sm text-center">Faltan {pendingCount} {pendingCount === 1 ? 'campo' : 'campos'} por llenar.</p>
+        )}
 
         <button
           onClick={onSubmit}

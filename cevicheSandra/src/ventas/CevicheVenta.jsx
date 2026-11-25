@@ -8,6 +8,7 @@ import {
 import {
   QUICK_CASH, addItemToOrder, changeItemQuantity, orderTotal, findPossibleDuplicate,
   createEmptyInventory, buildOrderMessage, buildInventoryMessage, buildClosingMessage,
+  findMissingInventory, getInventoryLabel,
 } from './ventaHelpers';
 import { loadMenu, MENU_CATEGORIES, getCategory, getMainImage } from '../hooks/useMenuData';
 import { whatsappLink } from '../config/siteConfig';
@@ -71,6 +72,14 @@ const CevicheVenta = () => {
   const [pendingWhatsApp, setPendingWhatsApp] = useState(null);
   const [formSending, setFormSending] = useState(false);
   const [checkingClosing, setCheckingClosing] = useState(false);
+  const [missingFields, setMissingFields] = useState([]);
+
+  // Lleva la pantalla al primer campo sin llenar
+  const scrollToField = (key) => {
+    setTimeout(() => {
+      document.getElementById(`field-${key}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 50);
+  };
 
   // Aviso de posible pedido repetido (pedido anterior idéntico)
   const [duplicateWarning, setDuplicateWarning] = useState(null);
@@ -320,6 +329,13 @@ const CevicheVenta = () => {
 
   const handleSendInventoryReport = async () => {
     if (formSending) return;
+    const missing = findMissingInventory(inventoryDailyReport);
+    setMissingFields(missing);
+    if (missing.length > 0) {
+      setInventoryModalError(`Falta llenar ${missing.length} ${missing.length === 1 ? 'campo' : 'campos'} (marcados en rojo): ${missing.map(getInventoryLabel).join(', ')}.`);
+      scrollToField(missing[0]);
+      return;
+    }
     setFormSending(true);
     try {
       await saveTodayDoc('daily_inventory_reports', user.name, { inventory: inventoryDailyReport });
@@ -372,6 +388,7 @@ const CevicheVenta = () => {
       await saveTodayDoc('closing_started', user.name, {});
       // El inventario final empieza vacío (no con los conteos de la mañana)
       setInventoryDailyReport(createEmptyInventory());
+      setMissingFields([]);
       setShowCloseRegisterModal(true);
     } catch (e) {
       console.error(e);
@@ -384,15 +401,19 @@ const CevicheVenta = () => {
     setFormSending(true);
     try {
       const cashReported = parseFloat(closingRegisterReport.dinero);
-      if (closingRegisterReport.dinero === '' || isNaN(cashReported)) {
+      const missing = findMissingInventory(inventoryDailyReport);
+      const cashMissing = closingRegisterReport.dinero === '' || closingRegisterReport.dinero == null || isNaN(cashReported) || cashReported < 0;
+      setMissingFields(cashMissing ? ['dinero', ...missing] : missing);
+      if (cashMissing) {
         setClosingModalError('Ingresa el dinero en caja.');
+        scrollToField('dinero');
         return;
       }
 
-      // Los envases son necesarios para el cuadre
-      const missingContainers = CONTAINERS.filter(c => inventoryDailyReport[c.key] === '' || isNaN(parseInt(inventoryDailyReport[c.key])));
-      if (missingContainers.length > 0) {
-        setClosingModalError(`Ingresa la cantidad de envases: ${missingContainers.map(c => c.label).join(', ')}.`);
+      // Todo el inventario final debe estar lleno (los envases además son necesarios para el cuadre)
+      if (missing.length > 0) {
+        setClosingModalError(`Falta llenar ${missing.length} ${missing.length === 1 ? 'campo' : 'campos'} (marcados en rojo): ${missing.map(getInventoryLabel).join(', ')}.`);
+        scrollToField(missing[0]);
         return;
       }
 
@@ -460,6 +481,7 @@ const CevicheVenta = () => {
               onSubmit={handleSendInventoryReport}
               error={inventoryModalError}
               submitting={formSending}
+              missingFields={missingFields}
            />;
   }
 
@@ -471,6 +493,7 @@ const CevicheVenta = () => {
               onSubmit={handleSendClosingReport}
               error={closingModalError}
               submitting={formSending}
+              missingFields={missingFields}
               isClosingReport={true}
               dailyTotals={dailyTotals}
               setClosingRegisterReport={setClosingRegisterReport}
