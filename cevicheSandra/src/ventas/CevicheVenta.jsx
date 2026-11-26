@@ -621,7 +621,7 @@ const CevicheVenta = () => {
       {/* CARRITO: panel lateral en escritorio, hoja inferior en móvil */}
       <aside className={`fixed z-50 bg-white flex flex-col shadow-[0_-4px_20px_rgba(0,0,0,0.12)] md:shadow-[-4px_0_20px_rgba(0,0,0,0.06)]
         left-0 right-0 bottom-0 rounded-t-2xl md:rounded-none
-        md:top-0 md:left-auto md:w-96 md:h-screen
+        md:top-0 md:left-auto md:w-96
         ${cartOpen ? 'max-h-[85vh] supports-[height:100dvh]:max-h-[85dvh]' : 'max-h-none'} md:max-h-none`}>
 
         {/* Encabezado del carrito (en móvil abre/cierra) */}
