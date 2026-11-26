@@ -573,7 +573,7 @@ const CevicheVenta = () => {
       </header>
 
       {/* PRODUCTOS */}
-      <main className="p-4 pb-32 md:pb-6 md:mr-96">
+      <main className={`p-4 ${order.length > 0 ? 'pb-48' : 'pb-32'} md:pb-6 md:mr-96`}>
         {cevichesData.length === 0 ? (
           <p className="text-center text-gray-400 py-16">Cargando menú...</p>
         ) : visibleProducts.length === 0 ? (
@@ -622,7 +622,7 @@ const CevicheVenta = () => {
       <aside className={`fixed z-50 bg-white flex flex-col shadow-[0_-4px_20px_rgba(0,0,0,0.12)] md:shadow-[-4px_0_20px_rgba(0,0,0,0.06)]
         left-0 right-0 bottom-0 rounded-t-2xl md:rounded-none
         md:top-0 md:left-auto md:w-96 md:h-screen
-        ${cartOpen ? 'max-h-[85vh]' : 'max-h-none'} md:max-h-none`}>
+        ${cartOpen ? 'max-h-[85vh] supports-[height:100dvh]:max-h-[85dvh]' : 'max-h-none'} md:max-h-none`}>
 
         {/* Encabezado del carrito (en móvil abre/cierra) */}
         <button onClick={() => setCartOpen(!cartOpen)} className="md:cursor-default p-4 bg-orange-600 text-white flex justify-between items-center rounded-t-2xl md:rounded-none">
@@ -635,9 +635,18 @@ const CevicheVenta = () => {
           </span>
         </button>
 
+        {/* Carrito cerrado con productos: botón grande para ir a enviar (solo móvil) */}
+        {!cartOpen && order.length > 0 && (
+          <button onClick={() => setCartOpen(true)} className="md:hidden m-3 py-3.5 rounded-xl font-bold text-white bg-green-600 active:bg-green-700 shadow-lg flex items-center justify-center gap-2">
+            <FaWhatsapp size={20}/> Revisar y enviar pedido
+          </button>
+        )}
+
         <div className={`${cartOpen ? 'flex' : 'hidden'} md:flex flex-col flex-1 min-h-0`}>
+          {/* Zona con scroll: productos y forma de pago. El botón de enviar queda fijo abajo */}
+          <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain">
           {/* Lista de Items */}
-          <div className="flex-1 overflow-y-auto p-3 space-y-2 bg-gray-50 min-h-[80px]">
+          <div className="p-3 space-y-2 bg-gray-50 min-h-[80px]">
             {order.length === 0 ? (
               <p className="text-center text-gray-400 py-8 text-sm">Toca un tamaño para agregarlo</p>
             ) : (
@@ -699,8 +708,7 @@ const CevicheVenta = () => {
                     step="0.01"
                     placeholder="0.00"
                     value={cashReceived}
-                    onChange={(e) => setCashReceived(e.target.value)}
-                    className="w-24 p-2 border border-gray-300 rounded-lg text-sm focus:border-orange-500 outline-none"
+                    onChange={(e) => setCashReceived(e.target.value)}                    className="w-24 p-2 border border-gray-300 rounded-lg text-sm focus:border-orange-500 outline-none"
                   />
                   {hasCash && (
                     cashValue >= grandTotal
@@ -716,7 +724,11 @@ const CevicheVenta = () => {
                 </div>
               </div>
             )}
+          </div>
+          </div>
 
+          {/* Botón de enviar: siempre visible al fondo del carrito */}
+          <div className="shrink-0 p-3 bg-white border-t border-gray-200" style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}>
             <button onClick={handleSendOrder} disabled={order.length === 0 || loading} className={`w-full py-3.5 rounded-xl font-bold text-white shadow-lg flex items-center justify-center gap-2 transition ${order.length === 0 || loading ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700 active:scale-[0.99]'}`}>
               {loading ? 'Enviando...' : <><FaWhatsapp size={20}/> Confirmar Pedido · ${grandTotal.toFixed(2)}</>}
             </button>
